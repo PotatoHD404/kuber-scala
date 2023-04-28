@@ -178,7 +178,7 @@ object MyNode {
   }
 }
 
-case class KuberInfo(nodes: Map[String, MyNode], podsWithoutNode: List[MyPod])
+case class KuberInfo(nodes: Map[String, MyNode], podsWithoutNode: List[MyPod], unscheduledPods: List[MyPod])
 
 object KuberInfo {
   def fromNodesAndPods(nodes: List[Node], pods: List[Pod], events: List[Event]): KuberInfo = {
@@ -187,7 +187,8 @@ object KuberInfo {
       MyNode.fromNode(node, nodePods, events)
     }.map(n => n.name -> n).toMap
     val podsWithoutNode = pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(MyPod.fromPod(_, events))
-    KuberInfo(myNodes, podsWithoutNode)
+    val unscheduledPods = pods.map(MyPod.fromPod(_, events)).filter(_.failedScheduling)
+    KuberInfo(myNodes, podsWithoutNode, unscheduledPods)
   }
 }
 
@@ -195,7 +196,7 @@ object MyJsonProtocol extends DefaultJsonProtocol {
   implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat7(MyEvent.apply)
   implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat14(MyPod.apply)
   implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat7(MyNode.apply)
-  implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat2(KuberInfo.apply)
+  implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat3(KuberInfo.apply)
 }
 
 // TODO: once it spontaneously crashed so need to handle exceptions properly
@@ -219,14 +220,9 @@ def main(): Unit = {
     // List pods
     val namespaces = Await.result(k8s.list[NamespaceList](), 10.seconds)
     val pods = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))), 10.seconds).flatten
-//    val events = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[EventList](Some(el.name)))), 10.seconds).flatten
     val events = Await.result(k8s.list[EventList](), 10.seconds)
-//    val podEventsSelector = LabelSelector(LabelSelector.IsEqualRequirement("involvedObject.kind", "Pod"), LabelSelector.IsEqualRequirement("involvedObject.name", podName))
 
-//    val newEvents = events.map(MyEvent.fromEvent)
-//    newEvents.toJson.prettyPrint.foreach(println)
     val info = KuberInfo.fromNodesAndPods(nodes, pods, events)
-    //    pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(_.spec.get.containers.flatMap(_.resources)).foreach(println)
 
     info.toJson.prettyPrint.foreach(println)
 
