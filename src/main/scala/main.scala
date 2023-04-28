@@ -36,7 +36,7 @@ def stringToFloat(value: String): Option[Float] = {
   }
 }
 
-case class MyPod(ip: Option[String], name: String, status: Option[String], startedAt: Option[String], age: Option[String], restarts: Int, states: List[String], allocatedResources: Map[String, List[BigDecimal]])
+case class MyPod(ip: Option[String], name: String, status: Option[String], startedAt: Option[String], age: Option[String], restarts: Int, states: List[String], allocatedResources: Map[String, List[BigDecimal]], namespace: String)
 
 object MyPod {
   def fromPod(pod: Pod): MyPod = {
@@ -71,7 +71,8 @@ object MyPod {
         "hugepages-2Mi-limits" -> resources.flatMap(_.limits.get(HugePagesPrefix + "2Mi")).map(_.amount),
         "hugepages-1Gi-requests" -> resources.flatMap(_.requests.get(HugePagesPrefix + "1Gi")).map(_.amount),
         "hugepages-1Gi-limits" -> resources.flatMap(_.limits.get(HugePagesPrefix + "1Gi")).map(_.amount),
-      )
+      ),
+      namespace = pod.namespace
     )
   }
 }
@@ -98,7 +99,7 @@ object MyNode {
       }
 
       }.toMap,
-      pods = newPods,
+      pods = newPods.filterNot(_.namespace.equals("kube-system")),
       ip = node.status.get.addresses.map(a => a.`_type` -> a.address).toMap,
       allocatedResources = newPods.flatMap(_.allocatedResources).groupBy(_._1).map { case (k, v) => k -> v.flatMap(_._2).sum },
 //      totalCpuRequests = newPods.flatMap(_.allocatedResources.get("cpu-requests")).sum,
@@ -112,9 +113,23 @@ object MyNode {
   }
 }
 
+case class KuberInfo (nodes: Map[String, MyNode], podsWithoutNode: List[MyPod])
+
+object KuberInfo {
+  def fromNodesAndPods(nodes: List[Node], pods: List[Pod]): KuberInfo = {
+    val myNodes = nodes.map { node =>
+      val nodePods = pods.filter(_.spec.get.nodeName.equals(node.name))
+      MyNode.fromNode(node, nodePods)
+    }.map(n => n.name -> n).toMap
+    val podsWithoutNode = pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(MyPod.fromPod)
+    KuberInfo(myNodes, podsWithoutNode)
+  }
+}
+
 object MyJsonProtocol extends DefaultJsonProtocol {
-  implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat8(MyPod.apply)
+  implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat9(MyPod.apply)
   implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat7(MyNode.apply)
+  implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat2(KuberInfo.apply)
 }
 
 // TODO: once it spontaneously crashed so need to handle exceptions properly
@@ -138,22 +153,11 @@ def main(): Unit = {
     // List pods
     val namespaces = Await.result(k8s.list[NamespaceList](), 10.seconds)
     val pods = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))), 10.seconds).flatten
-    //    val pods = Await.result(k8s.list[PodList](Some("kube-system")), 10.seconds)
+    val info = KuberInfo.fromNodesAndPods(nodes, pods)
+//    pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(_.spec.get.containers.flatMap(_.resources)).foreach(println)
 
-    // Convert Node and Pod objects to MyNode and MyPod case classes
-    val myNodes = nodes.items.map { node =>
-      val nodePods = pods.filter(_.spec.get.nodeName.equals(node.name))
-      MyNode.fromNode(node, nodePods)
-    }.map(n => n.name -> n).toMap
-    //    pods without node
-    val podsWithoutNode = pods.filter(_.spec.get.nodeName.isEmpty).map(MyPod.fromPod)
+    info.toJson.prettyPrint.foreach(println)
 
-    // Print MyNode case class objects
-    podsWithoutNode.toJson.prettyPrint.foreach(println)
-
-    // Serialize MyNode case class objects to JSON strings
-    val myNodeJsonStrings = myNodes.toJson.prettyPrint
-    myNodeJsonStrings.foreach(println)
 
   } catch {
     case e: Exception => throw e
