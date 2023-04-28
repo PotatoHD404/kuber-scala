@@ -49,24 +49,26 @@ def stringToFloat(value: String): Option[Float] = {
   }
 }
 
-case class MyEvent( reason: Option[String],
+case class MyEvent(
+                    reason: Option[String],
                     message: Option[String],
                     source: Option[String],
-//                    firstSeen: Option[String],
-//                    lastSeen: Option[String],
-                    count: Option[Int],
-                    `type`: Option[String])
+                    firstSeen: Option[String],
+                    lastSeen: Option[String],
+                    count: Int,
+                    eventType: Option[String],
+                  )
 
 object MyEvent {
   def fromEvent(event: Event): MyEvent = {
     MyEvent(
       reason = event.reason,
       message = event.message,
-      source = event.source.get.component.map(identity),
-//      firstSeen = event.firstTimestamp.map(_.toString),
-//      lastSeen = event.lastTimestamp.map(_.toString),
-      count = event.count,
-      `type` = event.`type`
+      source = event.source.get.component,
+      firstSeen = event.firstTimestamp.map(_.toString),
+      lastSeen = event.lastTimestamp.map(_.toString),
+      count = event.metadata.generation,
+      eventType = event.`type`
     )
   }
 }
@@ -127,12 +129,13 @@ object MyPod {
       namespace = pod.namespace,
       isSystem = pod.namespace.equals("kube-system"),
       // get events list and check if there is a failed scheduling event
-      failedScheduling = false,
+      failedScheduling = newEvents.exists(_.reason.contains("FailedScheduling")) && pod.status.get.phase.map(_.toString).contains("Pending") &&
+        pod.status.get.conditions.exists(el => el.`_type`== "PodScheduled" && el.status == "False"),
       eventList = newEvents
-//      failedScheduling = pod.metadata.uid.map { uid =>
-//        val events = k8s.events.listInNamespace(pod.namespace).filter(_.involvedObject.uid.contains(uid))
-//        events.exists(_.reason.contains("FailedScheduling"))
-//      }.getOrElse(false)
+      //      failedScheduling = pod.metadata.uid.map { uid =>
+      //        val events = k8s.events.listInNamespace(pod.namespace).filter(_.involvedObject.uid.contains(uid))
+      //        events.exists(_.reason.contains("FailedScheduling"))
+      //      }.getOrElse(false)
     )
   }
 }
@@ -189,10 +192,10 @@ object KuberInfo {
 }
 
 object MyJsonProtocol extends DefaultJsonProtocol {
+  implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat7(MyEvent.apply)
   implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat14(MyPod.apply)
   implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat7(MyNode.apply)
   implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat2(KuberInfo.apply)
-  implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat5(MyEvent.apply)
 }
 
 // TODO: once it spontaneously crashed so need to handle exceptions properly
@@ -216,7 +219,12 @@ def main(): Unit = {
     // List pods
     val namespaces = Await.result(k8s.list[NamespaceList](), 10.seconds)
     val pods = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))), 10.seconds).flatten
-    val events = Await.result(Future.sequence( namespaces.items.map(el => k8s.list[EventList](Some(el.name)))), 10.seconds).flatten
+//    val events = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[EventList](Some(el.name)))), 10.seconds).flatten
+    val events = Await.result(k8s.list[EventList](), 10.seconds)
+//    val podEventsSelector = LabelSelector(LabelSelector.IsEqualRequirement("involvedObject.kind", "Pod"), LabelSelector.IsEqualRequirement("involvedObject.name", podName))
+
+//    val newEvents = events.map(MyEvent.fromEvent)
+//    newEvents.toJson.prettyPrint.foreach(println)
     val info = KuberInfo.fromNodesAndPods(nodes, pods, events)
     //    pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(_.spec.get.containers.flatMap(_.resources)).foreach(println)
 
