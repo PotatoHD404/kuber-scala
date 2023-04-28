@@ -7,6 +7,10 @@ import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import spray.json.*
 import DefaultJsonProtocol.*
+import akka.actor.ActorSystem
+import akka.stream.{ActorMaterializer, FlowShape, Graph}
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+import skuber.api.client.{EventType, WatchEvent}
 
 import java.time.Duration
 import java.time.ZonedDateTime
@@ -191,13 +195,15 @@ object KuberInfo {
     KuberInfo(myNodes, podsWithoutNode, unscheduledPods)
   }
 }
-
+case class MyWatchEvent(eventType: String, pod: Option[MyPod], node: Option[MyNode])
 object MyJsonProtocol extends DefaultJsonProtocol {
   implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat7(MyEvent.apply)
   implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat14(MyPod.apply)
   implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat7(MyNode.apply)
   implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat3(KuberInfo.apply)
+  implicit val myWatchEventFormat: RootJsonFormat[MyWatchEvent] = jsonFormat3(MyWatchEvent.apply)
 }
+
 
 // TODO: once it spontaneously crashed so need to handle exceptions properly
 
@@ -224,12 +230,60 @@ def main(): Unit = {
 
     val info = KuberInfo.fromNodesAndPods(nodes, pods, events)
 
-    info.toJson.prettyPrint.foreach(println)
+//    info.toJson.prettyPrint.foreach(println)
+    def processEvent[T <: ObjectResource] = Flow[WatchEvent[T]].map { event =>
+//      println(event)
+//      Map (
+//        "type" -> event.`_type`.toString,
+//        {
+//          event.`_object` match {
+//            case pod: Pod => "pod"
+//            case node: Node => "node"
+//            case _ => "unknown"
+//          }
+//        } ->
+//        {
+//          event.`_object` match {
+//            case pod: Pod => MyPod.fromPod(pod, events)
+//            case node: Node => MyNode.fromNode(node, pods, events)
+//            case _ => None
+//          } : MyPod | MyNode | None.type
+//        }
+//      ).toJson
+      MyWatchEvent(
+        eventType = event.`_type`.toString,
+        pod = event.`_object` match {
+          case pod: Pod => Some(MyPod.fromPod(pod, events))
+          case _ => None
+        },
+        node = event.`_object` match {
+          case node: Node => Some(MyNode.fromNode(node, pods, events))
+          case _ => None
+        }
+      ).toJson.prettyPrint.foreach(println)
+    }
+//    val processEvent = Flow[WatchEvent[Pod]].map { event =>
+////      println(event)
+//      println(event.`_type`.toString)
+//      MyPod.fromPod(event.`_object`, events).toJson.prettyPrint.foreach(println)
+//    }
+
+    val podWatch = k8s.watchAllContinuously[Pod]()
+    podWatch
+      .viaMat(processEvent)(Keep.right)
+      .toMat(Sink.ignore)(Keep.right)
+      .run()
+    val nodeWatch = k8s.watchAllContinuously[Node]()
+    nodeWatch
+      .viaMat(processEvent)(Keep.right)
+      .toMat(Sink.ignore)(Keep.right)
+      .run()
+
 
 
   } catch {
     case e: Exception => throw e
   } finally {
-    system.terminate()
+//    system.terminate()
   }
 }
