@@ -1,20 +1,20 @@
-import skuber.*
-import skuber.json.format.*
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream.scaladsl.{Flow, Keep, Sink}
+import akka.stream.{ActorMaterializer, FlowShape, Graph}
+import jdk.internal.net.http.common.Log.logError
+import skuber.*
+import skuber.api.client.EventType.EventType
+import skuber.api.client.{EventType, WatchEvent}
 import skuber.apps.DeploymentList
+import skuber.json.format.*
+import spray.json.*
+import spray.json.DefaultJsonProtocol.*
 
+import java.time.{Duration, ZonedDateTime}
+import java.util.Optional
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
-import spray.json.*
-import DefaultJsonProtocol.*
-import akka.actor.ActorSystem
-import akka.stream.{ActorMaterializer, FlowShape, Graph}
-import akka.stream.scaladsl.{Flow, Keep, Sink}
-import skuber.api.client.{EventType, WatchEvent}
-
-import java.time.Duration
-import java.time.ZonedDateTime
-import java.util.Optional
 import scala.util.Try
 
 
@@ -61,10 +61,13 @@ case class MyEvent(
                     lastSeen: Option[String],
                     count: Int,
                     eventType: Option[String],
+                    uid: String,
+                    podUid: Option[String] = None,
                   )
 
 object MyEvent {
   def fromEvent(event: Event): MyEvent = {
+
     MyEvent(
       reason = event.reason,
       message = event.message,
@@ -72,7 +75,12 @@ object MyEvent {
       firstSeen = event.firstTimestamp.map(_.toString),
       lastSeen = event.lastTimestamp.map(_.toString),
       count = event.metadata.generation,
-      eventType = event.`type`
+      eventType = event.`type`,
+      uid = event.involvedObject.uid,
+      podUid = {
+        if (event.involvedObject.kind == "Pod") Some(event.involvedObject.uid)
+        else None
+      }
     )
   }
 }
@@ -89,9 +97,13 @@ case class MyPod(ip: Option[String],
                  namespace: String,
                  isSystem: Boolean,
                  failedScheduling: Boolean,
-                 eventList: List[MyEvent])
+                 events: Map[String, MyEvent],
+                 conditions: Map[String, Boolean],
+                 uid: String)
 
 object MyPod {
+  def fromPod(pod: Pod): MyPod = fromPod(pod, List.empty)
+
   def fromPod(pod: Pod, events: List[Event]): MyPod = {
     val resources = pod.spec.get.containers.flatMap(_.resources)
 
@@ -134,8 +146,10 @@ object MyPod {
       isSystem = pod.namespace.equals("kube-system"),
       // get events list and check if there is a failed scheduling event
       failedScheduling = newEvents.exists(_.reason.contains("FailedScheduling")) && pod.status.get.phase.map(_.toString).contains("Pending") &&
-        pod.status.get.conditions.exists(el => el.`_type`== "PodScheduled" && el.status == "False"),
-      eventList = newEvents
+        pod.status.get.conditions.exists(el => el.`_type` == "PodScheduled" && el.status == "False"),
+      events = newEvents.map(el => el.uid -> el).toMap,
+      uid = pod.metadata.uid,
+      conditions = pod.status.get.conditions.map(el => el.`_type` -> stringToBoolean(el.status)).toMap
       //      failedScheduling = pod.metadata.uid.map { uid =>
       //        val events = k8s.events.listInNamespace(pod.namespace).filter(_.involvedObject.uid.contains(uid))
       //        events.exists(_.reason.contains("FailedScheduling"))
@@ -144,15 +158,27 @@ object MyPod {
   }
 }
 
+def stringToBoolean(s: String): Boolean = {
+  s match {
+    case "True" => true
+    case "False" => false
+    case _ => throw new IllegalArgumentException("Invalid boolean value: " + s)
+  }
+}
+
 case class MyNode(name: String,
                   status: Map[String, Boolean],
-                  pods: List[MyPod],
+                  pods: Map[String, MyPod],
                   ip: Map[String, String],
                   allocatedResources: Map[String, BigDecimal],
                   capacity: Map[String, BigDecimal],
-                  allocatable: Map[String, BigDecimal])
+                  allocatable: Map[String, BigDecimal],
+                  uid: String)
 
 object MyNode {
+
+  def fromNode(node: Node): MyNode = fromNode(node, List.empty, List.empty)
+
   def fromNode(node: Node, pods: List[Pod], events: List[Event]): MyNode = {
 
 
@@ -163,45 +189,64 @@ object MyNode {
       name = node.name,
       status = node.status.get.conditions.map { condition => {
         condition.`_type` -> {
-          condition.status match {
-            case "True" => true
-            case "False" => false
-            case _ => throw new Exception("Unknown status")
-          }
+          stringToBoolean(condition.status)
         }
       }
 
       }.toMap,
-      pods = newPods.filterNot(_.isSystem),
+      pods = newPods.filterNot(_.isSystem).map(pod => pod.uid -> pod).toMap,
       ip = node.status.get.addresses.map(a => a.`_type` -> a.address).toMap,
       allocatedResources = newPods.flatMap(_.allocatedResources).groupBy(_._1).map { case (k, v) => k -> v.map(_._2).sum },
 
       capacity = node.status.get.capacity.map((k, v) => k -> v.amount),
       allocatable = node.status.get.allocatable.map((k, v) => k -> v.amount),
+      uid = node.metadata.uid,
     )
   }
 }
 
-case class KuberInfo(nodes: Map[String, MyNode], podsWithoutNode: List[MyPod], unscheduledPods: List[MyPod])
+case class KuberInfo(nodes: Map[String, MyNode],
+                     podsWithoutNode: Map[String, MyPod],
+                     unscheduledPods: Map[String, MyPod],
+                     events: List[MyEvent],
+                     namespaces: Set[String])
 
 object KuberInfo {
-  def fromNodesAndPods(nodes: List[Node], pods: List[Pod], events: List[Event]): KuberInfo = {
+  def fromNodesAndPods(nodes: List[Node], pods: List[Pod], events: List[Event], namespaces: NamespaceList): KuberInfo = {
     val myNodes = nodes.map { node =>
       val nodePods = pods.filter(_.spec.get.nodeName.equals(node.name))
       MyNode.fromNode(node, nodePods, events)
     }.map(n => n.name -> n).toMap
     val podsWithoutNode = pods.filter(_.spec.get.nodeName.isEmpty).filterNot(_.namespace.equals("kube-system")).map(MyPod.fromPod(_, events))
     val unscheduledPods = pods.map(MyPod.fromPod(_, events)).filter(_.failedScheduling)
-    KuberInfo(myNodes, podsWithoutNode, unscheduledPods)
+    KuberInfo(nodes = myNodes,
+      podsWithoutNode = podsWithoutNode.map(pod => pod.uid -> pod).toMap,
+      unscheduledPods = unscheduledPods.map(pod => pod.uid -> pod).toMap,
+      events = events.map(MyEvent.fromEvent),
+      namespaces = namespaces.items.map(_.metadata.name).toSet
+    )
   }
+
+  def createEmpty: KuberInfo = KuberInfo(Map.empty, Map.empty, Map.empty, List.empty, Set.empty)
 }
-case class MyWatchEvent(eventType: String, pod: Option[MyPod], node: Option[MyNode])
+
+case class MyWatchEvent(eventType: EventType,
+                        pod: Option[MyPod],
+                        node: Option[MyNode],
+                        namespace: Option[String],
+                        event: Option[MyEvent])
+
 object MyJsonProtocol extends DefaultJsonProtocol {
-  implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat7(MyEvent.apply)
-  implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat14(MyPod.apply)
-  implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat7(MyNode.apply)
-  implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat3(KuberInfo.apply)
-  implicit val myWatchEventFormat: RootJsonFormat[MyWatchEvent] = jsonFormat3(MyWatchEvent.apply)
+  implicit val myEventFormat: RootJsonFormat[MyEvent] = jsonFormat9(MyEvent.apply)
+  implicit val myPodFormat: RootJsonFormat[MyPod] = jsonFormat16(MyPod.apply)
+  implicit val myNodeFormat: RootJsonFormat[MyNode] = jsonFormat8(MyNode.apply)
+  implicit val kuberInfoFormat: RootJsonFormat[KuberInfo] = jsonFormat5(KuberInfo.apply)
+  implicit val myWatchEventFormat: RootJsonFormat[MyWatchEvent] = jsonFormat5(MyWatchEvent.apply)
+  implicit val skuberEventTypeFormat: RootJsonFormat[EventType] = new RootJsonFormat[EventType] {
+    override def write(obj: EventType): JsValue = JsString(obj.toString)
+
+    override def read(json: JsValue): EventType = EventType.withName(json.convertTo[String])
+  }
 }
 
 
@@ -209,7 +254,7 @@ object MyJsonProtocol extends DefaultJsonProtocol {
 
 @main
 def main(): Unit = {
-  import MyJsonProtocol._
+  import MyJsonProtocol.*
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val dispatcher: ExecutionContextExecutor = system.dispatcher
@@ -220,70 +265,187 @@ def main(): Unit = {
     // List nodes
 
     val nodes = Await.result(k8s.list[NodeList](), 10.seconds)
-    println("Nodes:")
-    println()
 
-    // List pods
     val namespaces = Await.result(k8s.list[NamespaceList](), 10.seconds)
     val pods = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))), 10.seconds).flatten
     val events = Await.result(k8s.list[EventList](), 10.seconds)
 
-    val info = KuberInfo.fromNodesAndPods(nodes, pods, events)
+    var info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
+    //    var info = KuberInfo.createEmpty
+    var i: Int = 0;
 
-//    info.toJson.prettyPrint.foreach(println)
-    def processEvent[T <: ObjectResource] = Flow[WatchEvent[T]].map { event =>
-//      println(event)
-//      Map (
-//        "type" -> event.`_type`.toString,
-//        {
-//          event.`_object` match {
-//            case pod: Pod => "pod"
-//            case node: Node => "node"
-//            case _ => "unknown"
-//          }
-//        } ->
-//        {
-//          event.`_object` match {
-//            case pod: Pod => MyPod.fromPod(pod, events)
-//            case node: Node => MyNode.fromNode(node, pods, events)
-//            case _ => None
-//          } : MyPod | MyNode | None.type
-//        }
-//      ).toJson
-      MyWatchEvent(
-        eventType = event.`_type`.toString,
-        pod = event.`_object` match {
-          case pod: Pod => Some(MyPod.fromPod(pod, events))
-          case _ => None
-        },
-        node = event.`_object` match {
-          case node: Node => Some(MyNode.fromNode(node, pods, events))
-          case _ => None
+    //    info.toJson.prettyPrint.foreach(println)
+    def processEvent: Flow[WatchEvent[_ >: Pod & Node & Event & Namespace <: ObjectResource], Unit, NotUsed] = {
+      Flow[WatchEvent[_ >: Pod & Node & Event & Namespace <: ObjectResource]].map({ watchedEvent =>
+        i += 1
+        println(i)
+        println(watchedEvent)
+        val eventType = watchedEvent.`_type`
+
+        watchedEvent.`_object` match {
+          case pod: Pod => podEventHandler(eventType, MyPod.fromPod(pod))
+          case node: Node => nodeEventHandler(eventType, MyNode.fromNode(node))
+          case namespace: Namespace => namespaceEventHandler(eventType, namespace)
+          case event: Event => eventEventHandler(eventType, MyEvent.fromEvent(event))
+          case _ => throw new Exception("Unknown object")
         }
-      ).toJson.prettyPrint.foreach(println)
+        println("ok")
+        //        println(info.toJson.prettyPrint)
+        //        MyWatchEvent(
+        //          eventType = watchedEvent.`_type`,
+        //          pod = pod,
+        //          node = node,
+        //          namespace = namespace,
+        //          event = event
+        //        )
+      })
     }
-//    val processEvent = Flow[WatchEvent[Pod]].map { event =>
-////      println(event)
-//      println(event.`_type`.toString)
-//      MyPod.fromPod(event.`_object`, events).toJson.prettyPrint.foreach(println)
-//    }
 
-    val podWatch = k8s.watchAllContinuously[Pod]()
-    podWatch
+    def namespaceEventHandler(eventType: EventType, namespace: Namespace): Unit = {
+      println("Namespace")
+      println(eventType.toJson.prettyPrint)
+
+      val namespaceName = namespace.metadata.name
+      eventType match {
+        case EventType.ADDED =>
+          info = info.copy(namespaces = info.namespaces + namespaceName)
+        case EventType.DELETED =>
+          info = info.copy(namespaces = info.namespaces - namespaceName)
+        case _ =>
+          println(s"Unhandled event type: $eventType")
+      }
+    }
+
+    def nodeEventHandler(eventType: EventType, node: MyNode): Unit = {
+      //      println("Node")
+      //      println(node.toJson.prettyPrint)
+
+      val nodeUid = node.uid
+      eventType match {
+        case EventType.ADDED =>
+          info = info.copy(nodes = info.nodes.updated(nodeUid, node))
+        case EventType.MODIFIED =>
+          val prevNode = info.nodes.get(nodeUid)
+          val updatedNode = prevNode.map { n =>
+            node.copy(
+              pods = n.pods,
+              allocatedResources = n.allocatedResources,
+            )
+          }.getOrElse(node)
+          info = info.copy(nodes = info.nodes.updated(nodeUid, updatedNode))
+        case EventType.DELETED =>
+          info = info.copy(nodes = info.nodes - nodeUid)
+        case _ =>
+          println(s"Unhandled event type: $eventType")
+      }
+    }
+
+    def podEventHandler(event: EventType, pod: MyPod): Unit = {
+      //      println("Pod")
+      //      println(pod.toJson.prettyPrint)
+
+      val podUid = pod.uid
+      val nodeNameOpt = pod.name
+
+      def updateNodePods(nodeUid: String, updateFn: Map[String, MyPod] => Map[String, MyPod]): Unit = {
+        info.nodes.get(nodeUid).foreach { node =>
+          val updatedPods = updateFn(node.pods)
+          val updatedNode = node.copy(pods = updatedPods)
+          info = info.copy(nodes = info.nodes.updated(nodeUid, updatedNode))
+        }
+      }
+
+      event match {
+        case EventType.ADDED =>
+          nodeNameOpt.foreach { nodeName =>
+            updateNodePods(nodeName, _ + (podUid -> pod))
+          }
+
+        case EventType.MODIFIED =>
+          nodeNameOpt.foreach { nodeName =>
+            updateNodePods(nodeName, { pods =>
+              val updatedPod = pods.get(podUid)
+                .map(existingPod => pod.copy(events = existingPod.events))
+                .getOrElse(pod)
+              pods.updated(podUid, updatedPod)
+            })
+          }
+
+        case EventType.DELETED =>
+          nodeNameOpt.foreach { nodeName =>
+            updateNodePods(nodeName, _ - podUid)
+          }
+
+        case _ =>
+          println(s"Unhandled event type: $event")
+      }
+    }
+
+    def eventEventHandler(eventType: EventType, event: MyEvent): Unit = {
+      //      println("Event")
+      //      println(event.toJson.prettyPrint)
+
+      event.podUid.foreach { podUid =>
+        //        val (foundNode, pod) = info.nodes.values.find(_.pods.contains(podUid)) match {
+        //          case Some(node) => (Some(node), node.pods(podUid))
+        //          case None => (None, info.podsWithoutNode(podUid))
+        //        }
+
+        //        val updatedEvents = eventType match {
+        //          case EventType.ADDED =>
+        //            pod.eventList :+ event
+        //
+        //          case EventType.MODIFIED =>
+        //            pod.eventList.filterNot(_.uid == event.uid) :+ event
+        //
+        //          case EventType.DELETED =>
+        //            pod.eventList.filterNot(_.uid == event.uid)
+        //
+        //          case _ =>
+        //            println(s"Unhandled event type: $eventType")
+        //            pod.eventList
+        //        }
+        ////        val failedScheduling = false
+        //        val failedScheduling = updatedEvents.exists(_.reason.contains("FailedScheduling")) &&
+        //          pod.status.contains("Pending") &&
+        //          pod.conditions.exists(el => el._1 == "PodScheduled" && !el._2)
+        //
+        //        val updatedPod = pod.copy(eventList = updatedEvents, failedScheduling = failedScheduling)
+        //
+        //        foundNode match {
+        //          case Some(node) =>
+        //            val updatedPods = node.pods.updated(podUid, updatedPod)
+        //            val updatedNode = node.copy(pods = updatedPods)
+        //            info = info.copy(nodes = info.nodes.updated(node.uid, updatedNode))
+        //
+        //          case None =>
+        //            info = info.copy(podsWithoutNode = info.podsWithoutNode.updated(podUid, updatedPod))
+        //        }
+      }
+    }
+
+    val customListOptions = ListOptions(timeoutSeconds = Some(5), resourceVersion = Some("0"))
+
+    val podWatch = k8s.watchWithOptions[Pod](customListOptions)
+    val nodeWatch = k8s.watchWithOptions[Node](customListOptions)
+    //    val eventWatch = k8s.watchAllContinuously[Event]()
+    val namespaceWatch = k8s.watchWithOptions[Namespace](customListOptions)
+    //    val allWatch = podWatch.merge(nodeWatch).merge(eventWatch).merge(namespaceWatch)
+    val allWatch = podWatch.merge(nodeWatch).merge(namespaceWatch)
+    allWatch
       .viaMat(processEvent)(Keep.right)
+      .recover { e =>
+        println("Error")
+        e.printStackTrace()
+        throw e
+      }
       .toMat(Sink.ignore)(Keep.right)
       .run()
-    val nodeWatch = k8s.watchAllContinuously[Node]()
-    nodeWatch
-      .viaMat(processEvent)(Keep.right)
-      .toMat(Sink.ignore)(Keep.right)
-      .run()
-
 
 
   } catch {
     case e: Exception => throw e
   } finally {
-//    system.terminate()
+    //    system.terminate()
   }
 }
