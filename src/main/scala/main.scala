@@ -1,12 +1,17 @@
 import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.http.scaladsl.client.RequestBuilding.Patch
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import jdk.internal.net.http.common.Log.logError
 import skuber.*
+import skuber.Pod.{Affinity, Template}
+import skuber.Pod.Affinity.NodeAffinity.PreferredSchedulingTerm
+import skuber.Pod.Affinity.{NodeSelectorOperator, NodeSelectorRequirement, NodeSelectorTerm}
 import skuber.api.client.EventType.EventType
-import skuber.api.client.{EventType, WatchEvent}
-import skuber.apps.DeploymentList
+import skuber.api.client.{EventType, KubernetesClient, WatchEvent}
+//import skuber.apps.DeploymentList
+import skuber.apps.v1beta2.{Deployment, DeploymentList}
 import skuber.json.format.*
 import spray.json.*
 import spray.json.DefaultJsonProtocol.*
@@ -231,11 +236,81 @@ object MyNode {
   }
 }
 
+//def isRedistributable(pod: MyPod): Boolean = {
+//  !pod.isSystem
+//}
+//
 case class KuberInfo(nodes: Map[String, MyNode],
                      podsWithoutNode: Map[String, MyPod],
                      unscheduledPods: Map[String, MyPod],
                      events: List[MyEvent],
                      namespaces: Set[String])
+//                     {
+//  def redistributePods()(implicit k8s: KubernetesClient): Future[Unit] = {
+//    // Find the nodes with redistributable pods
+//    val nodesWithRedistributablePods = nodes.values.filter { node =>
+//      node.pods.values.exists(isRedistributable)
+//    }
+//
+//    // Make nodes with redistributable pods unschedulable
+//    val makeNodesUnschedulable = nodesWithRedistributablePods.map { node =>
+//      k8s.patch[Node](
+//        node.name,
+//        Patch(
+//          List(
+//            PatchOp.Replace(
+//              "/spec/unschedulable",
+//              JsBoolean(true)
+//            )
+//          )
+//        )
+//      )
+//    }
+//
+//    // Collect redistributable pods from the nodes
+//    val redistributablePods = nodesWithRedistributablePods.flatMap(_.pods.values.filter(isRedistributable)).toList
+//
+//    // Schedule redistributable pods to other nodes
+////    val scheduleRedistributablePods = redistributablePods.map { pod =>
+////      k8s.create[Pod](
+////        Pod(
+////          metadata = ObjectMeta(
+////            name = pod.name,
+////            namespace = pod.namespace
+////          ),
+////          spec = Some(Pod.Spec(
+////            containers = pod.containers
+////          ))
+////        ),
+////        Some(pod.namespace)
+////      )
+////    }
+//
+//    // Wait for all pods to be scheduled and running
+//    val waitForPodsRunning = scheduleRedistributablePods.map { scheduledPodFut =>
+//      scheduledPodFut.flatMap { scheduledPod =>
+//        k8s.waitForStatus[Pod](
+//          scheduledPod.metadata.name,
+//          scheduledPod.metadata.namespace,
+//          (pod: Pod) => pod.status.exists(_.phase.contains("Running"))
+//        )
+//      }
+//    }
+//
+//    // Send termination signal to nodes with redistributable pods
+//    val terminateNodes = nodesWithRedistributablePods.map { node =>
+//      k8s.delete[Node](node.name)
+//    }
+//
+//    // Execute the above steps sequentially
+//    for {
+//      _ <- Future.sequence(makeNodesUnschedulable)
+//      _ <- Future.sequence(scheduleRedistributablePods)
+//      _ <- Future.sequence(waitForPodsRunning)
+//      _ <- Future.sequence(terminateNodes)
+//    } yield ()
+//  }
+//}
 
 object KuberInfo {
   def fromNodesAndPods(nodes: List[Node], pods: List[Pod], events: List[Event], namespaces: NamespaceList): KuberInfo = {
@@ -304,33 +379,66 @@ def main(): Unit = {
       } yield KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
     }
 
-    def checker(): Unit = {
-      println("new info")
+
+    val namespace = "default"
+    val nodesToExclude = Set("node1", "node2")
+
+    def updateDeploymentAntiAffinity(deployment: Deployment, nodesToExclude: Set[String]): Deployment = {
+      val updatedPodSpec = deployment.spec.flatMap(_.template.flatMap(_.spec.map { spec =>
+        val affinity = spec.affinity.getOrElse(Affinity())
+        val updatedNodeAffinity = affinity.nodeAffinity.map { nodeAffinity =>
+          val updatedPreferred = nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution :+
+            PreferredSchedulingTerm(
+              NodeSelectorTerm(nodesToExclude.toList.map { nodeName =>
+                NodeSelectorRequirement("kubernetes.io/hostname", NodeSelectorOperator.NotIn, List(nodeName))
+              }),
+              100
+            )
+          nodeAffinity.copy(preferredDuringSchedulingIgnoredDuringExecution = updatedPreferred)
+        }
+        spec.copy(affinity = Some(affinity.copy(nodeAffinity = updatedNodeAffinity)))
+      }))
+      deployment.copy(spec = deployment.spec.map(_.copy(template = deployment.spec.map(_.template.map(_.copy(spec = updatedPodSpec)).getOrElse(Template.Spec())))))
     }
 
-    def updateInfo(): Future[Unit] = {
-      fetchKubernetesResources().flatMap { newInfo =>
-        println(newInfo.toJson.prettyPrint)
-        if (info != newInfo) {
-          info = newInfo
-          checker() // Assuming checker is a function you've defined elsewhere
-        } else {
-          println("no change")
-        }
-        Future.successful(())
-      }
-    }
+
+    val deploymentsFut = k8s.list[DeploymentList]()
+    val updatedDeploymentsFut = deploymentsFut.map(_.items.map(updateDeploymentAntiAffinity(_, nodesToExclude)))
+
+    val resultFut = for {
+      updatedDeployments <- updatedDeploymentsFut
+//      results <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+    } yield updatedDeployments
+
+    val results = Await.result(resultFut, 10.seconds)
+    println(s"Updated Deployments:")
+    results.foreach(result => println(s"  - ${result.metadata.name}"))
+
+//    def updateInfo(): Future[Unit] = {
+//      fetchKubernetesResources().flatMap { newInfo =>
+//        println(newInfo.toJson.prettyPrint)
+//        if (info != newInfo) {
+//          info = newInfo
+//
+//
+//        } else {
+//          println("no change")
+//        }
+//        Future.successful(())
+//      }
+//    }
 
     // Initial fetch
-    updateInfo()
+//    updateInfo()
 
     // Schedule updates every 5 seconds
-    val updateInterval = 5.seconds
-    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
+//    val updateInterval = 5.seconds
+//    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
 
   } catch {
     case e: Exception => throw e
   } finally {
-    //    system.terminate()
+    //    k8s.close
+    //    system.terminate
   }
 }
