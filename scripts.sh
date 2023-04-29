@@ -1,0 +1,1 @@
+minikube start --nodes 2 -p multinode-demo

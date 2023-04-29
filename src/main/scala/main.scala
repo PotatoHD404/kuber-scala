@@ -381,7 +381,7 @@ def main(): Unit = {
 
 
     val namespace = "default"
-    val nodesToExclude = Set("node1", "node2")
+    val nodesToExclude: Set[String] = Set()
 
     def updateDeploymentAntiAffinity(deployment: Deployment, nodesToExclude: Set[String]): Deployment = {
       val updatedPodSpec = deployment.spec.flatMap(_.template.flatMap(_.spec.map { spec =>
@@ -404,15 +404,16 @@ def main(): Unit = {
 
     val deploymentsFut = k8s.list[DeploymentList]()
     val updatedDeploymentsFut = deploymentsFut.map(_.items.map(updateDeploymentAntiAffinity(_, nodesToExclude)))
-
-    val resultFut = for {
-      updatedDeployments <- updatedDeploymentsFut
-//      results <- Future.sequence(updatedDeployments.map(k8s.update(_)))
-    } yield updatedDeployments
-
-    val results = Await.result(resultFut, 10.seconds)
-    println(s"Updated Deployments:")
-    results.foreach(result => println(s"  - ${result.metadata.name}"))
+//
+//    val resultFut = for {
+//      updatedDeployments <- updatedDeploymentsFut
+////      results <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+//    } yield updatedDeployments
+////
+//    val results = Await.result(resultFut, 10.seconds)
+    val results = Await.result(updatedDeploymentsFut, 10.seconds)
+//    println(s"Updated Deployments:")
+//    results.foreach(result => println(s"  - ${result.metadata.name}"))
 
 //    def updateInfo(): Future[Unit] = {
 //      fetchKubernetesResources().flatMap { newInfo =>
@@ -438,7 +439,7 @@ def main(): Unit = {
   } catch {
     case e: Exception => throw e
   } finally {
-    //    k8s.close
-    //    system.terminate
+        k8s.close
+        system.terminate
   }
 }
