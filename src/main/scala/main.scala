@@ -4,14 +4,21 @@ import akka.http.scaladsl.client.RequestBuilding.Patch
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import jdk.internal.net.http.common.Log.logError
+import play.api.libs.json.{Format, JsPath}
 import skuber.*
-import skuber.Pod.{Affinity, Template}
+import skuber.Pod.{Affinity, Phase, Template}
 import skuber.Pod.Affinity.NodeAffinity.PreferredSchedulingTerm
 import skuber.Pod.Affinity.{NodeSelectorOperator, NodeSelectorRequirement, NodeSelectorTerm}
 import skuber.api.client.EventType.EventType
 import skuber.api.client.{EventType, KubernetesClient, WatchEvent}
+import skuber.apps.v1.ReplicaSet.{Spec, Status}
+//import skuber.ext.{ReplicaSet, ReplicaSetList}
 //import skuber.apps.DeploymentList
-import skuber.apps.v1beta2.{Deployment, DeploymentList}
+
+import scala.concurrent.TimeoutException
+//import skuber.apps.DeploymentList
+import skuber.apps.v1.{Deployment, DeploymentList, StatefulSetList, StatefulSet}
+import skuber.apps.v1._
 import skuber.json.format.*
 import spray.json.*
 import spray.json.DefaultJsonProtocol.*
@@ -176,7 +183,7 @@ object MyPod {
       namespace = pod.namespace,
       isSystem = pod.namespace.equals("kube-system"),
       // get events list and check if there is a failed scheduling event
-      failedScheduling = newEvents.exists(_.reason.contains("FailedScheduling")) && pod.status.get.phase.map(_.toString).contains("Pending") &&
+      failedScheduling = newEvents.exists(_.reason.contains("FailedScheduling")) && pod.status.get.phase.contains(Phase.Pending) &&
         pod.status.get.conditions.exists(el => el.`_type` == "PodScheduled" && el.status == "False"),
       events = newEvents.map(el => el.uid -> el).toMap,
       uid = pod.metadata.uid,
@@ -360,7 +367,6 @@ def main(): Unit = {
   val k8s = k8sInit
 
 
-
   try {
 
 
@@ -371,6 +377,11 @@ def main(): Unit = {
     val events = Await.result(k8s.list[EventList](), 10.seconds)
 
     var info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
+    //    val test = Await.result(k8s.list[DeploymentList](), 10.seconds)
+    //    //
+    //    test.items.foreach(el => {
+    //      println(el)
+    //    })
 
     def cordonNode(nodeName: String) = {
       for {
@@ -385,50 +396,157 @@ def main(): Unit = {
       k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace))
     }
 
+    def scaleDeployments(namespace: String, factor: Int): Future[Unit] = {
+      for {
+        deploymentList <- k8s.list[DeploymentList](Some(namespace))
+        _ <- Future.sequence(
+          deploymentList.items.map { deployment =>
+            val newReplicas = deployment.spec.flatMap(_.replicas).getOrElse(0) + factor
+            val updatedDeployment = deployment.copy(spec = deployment.spec.map(_.copy(replicas = Some(newReplicas))))
+            k8s.update(updatedDeployment)
+          }
+        )
+      } yield ()
+    }
+
+
+    def waitUntilAllPodsRunning(pollInterval: FiniteDuration = 5.seconds, timeout: FiniteDuration = 5.minutes): Future[Unit] = {
+      val deadline = timeout.fromNow
+
+      def checkPods(): Future[Boolean] = {
+        for {
+          podList <- k8s.list[PodList]()
+        } yield {
+          println(podList.items.map(_.status.flatMap(_.phase)))
+          val condition = podList.items.forall(_.status.exists(_.phase.contains(Phase.Running)))
+          println(condition)
+          condition
+        }
+      }
+
+      def poll(): Future[Unit] = {
+        if (deadline.isOverdue()) {
+          Future.failed(new TimeoutException(s"Timed out waiting for all pods to be running after $timeout"))
+        } else {
+          checkPods().flatMap { allRunning =>
+            if (allRunning) {
+              Future.successful(())
+            } else {
+              akka.pattern.after(pollInterval, system.scheduler)(poll())
+            }
+          }
+        }
+      }
+
+      poll()
+    }
+
+    //noinspection DuplicatedCode
+    def increaseReplicas[T <: ObjectResource](resource: T, increment: Int): T = {
+      resource match {
+        case statefulSet: StatefulSet =>
+          statefulSet.copy(spec = statefulSet.spec.map(_.copy(replicas = Some(statefulSet.spec.flatMap(_.replicas).getOrElse(0) + increment)))).asInstanceOf[T]
+        case deployment: Deployment =>
+          deployment.copy(spec = deployment.spec.map(_.copy(replicas = Some(deployment.spec.flatMap(_.replicas).getOrElse(0) + increment)))).asInstanceOf[T]
+        case replicaSet: ReplicaSet =>
+          replicaSet.copy(spec = replicaSet.spec.map(_.copy(replicas = Some(replicaSet.spec.flatMap(_.replicas).getOrElse(0) + increment)))).asInstanceOf[T]
+        //        case daemonSet: DaemonSet =>
+        //          daemonSet.copy(spec = daemonSet.spec.map(_.copy(updateStrategy = daemonSet.spec.flatMap(_.updateStrategy).map(_.copy(rollingUpdate = daemonSet.spec.flatMap(_.updateStrategy.flatMap(_.rollingUpdate)).map(_.copy(maxUnavailable = 0))))))).asInstanceOf[T]
+        case _ => resource
+      }
+    }
+
+    implicit lazy val depFormat: Format[ReplicaSet] = (objFormat and
+      (JsPath \ "spec").formatNullable[Spec] and
+      (JsPath \ "status").formatNullable[Status])(ReplicaSet.apply, dp => (dp.kind, dp.apiVersion, dp.metadata, dp.spec, dp.status))
+
+    implicit val deployListFormat: Format[ReplicaSetList] = ListResourceFormat[ReplicaSet]
+
+    implicit val deployDef: ResourceDefinition[ReplicaSet] = new ResourceDefinition[ReplicaSet] {
+      def spec: ResourceSpecification = ReplicaSet.specification
+    }
+    implicit val deployListDef: ResourceDefinition[ReplicaSetList] = new ResourceDefinition[ReplicaSetList] {
+      def spec: ResourceSpecification = ReplicaSet.specification
+    }
+    def getResources: Future[(StatefulSetList, DeploymentList, ReplicaSetList)] = {
+      for {
+        statefulSets <- k8s.list[StatefulSetList]()
+        deployments <- k8s.list[DeploymentList]()
+        replicaSets <- k8s.list[ReplicaSetList]()
+        //        daemonSets <- k8s.list[DaemonSetList]()
+      } yield (statefulSets, deployments, replicaSets)
+    }
+
     def drainNode(nodeName: String, gracePeriod: Int): Future[Unit] = {
       for {
         podList <- k8s.list[PodList]()
         nodePods = podList.items.filter(_.spec.exists(_.nodeName == nodeName))
+
+        (statefulSets, deployments, replicaSets) <- getResources
+
+        updatedStatefulSets = statefulSets.items.map { ss =>
+          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("statefulset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ss.metadata.labels.get("app.kubernetes.io/name"))
+          increaseReplicas[StatefulSet](ss, increment)
+        }
+        updatedDeployments = deployments.items.map { d =>
+          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == d.metadata.labels.get("app.kubernetes.io/name"))
+          increaseReplicas[Deployment](d, increment)
+        }
+        updatedReplicaSets = replicaSets.items.map { rs =>
+          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("replicaset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == rs.metadata.labels.get("app.kubernetes.io/name"))
+          increaseReplicas[ReplicaSet](rs, increment)
+        }
+        //        updatedDaemonSets = daemonSets.items.map { ds =>
+        //          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("daemonset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ds.metadata.labels.get("app.kubernetes.io/name"))
+        //          increaseReplicas[DaemonSet](ds, increment)
+        //        }
+
+        _ <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
+        _ <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+        _ <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
+        //        _ <- Future.sequence(updatedDaemonSets.map(k8s.update(_)))
+
+        _ <- waitUntilAllPodsRunning()
         _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
       } yield ()
     }
 
-    val nodeName = "multinode-demo-m02"
+    val nodeName = "multinode-demo"
     val gracePeriod = 30 // Adjust the grace period as needed
 
-    // Cordon the node
+    //    Cordon the node
     Await.result(cordonNode(nodeName), 1.minute)
 
-    // Drain the node
+    //    Drain the node
     Await.result(drainNode(nodeName, gracePeriod), 10.minutes)
-//    println(s"Updated Deployments:")
-//    results.foreach(result => println(s"  - ${result.metadata.name}"))
+    //    println(s"Updated Deployments:")
+    //    results.foreach(result => println(s"  - ${result.metadata.name}"))
 
-//    def updateInfo(): Future[Unit] = {
-//      fetchKubernetesResources().flatMap { newInfo =>
-//        println(newInfo.toJson.prettyPrint)
-//        if (info != newInfo) {
-//          info = newInfo
-//
-//
-//        } else {
-//          println("no change")
-//        }
-//        Future.successful(())
-//      }
-//    }
+    //    def updateInfo(): Future[Unit] = {
+    //      fetchKubernetesResources().flatMap { newInfo =>
+    //        println(newInfo.toJson.prettyPrint)
+    //        if (info != newInfo) {
+    //          info = newInfo
+    //
+    //
+    //        } else {
+    //          println("no change")
+    //        }
+    //        Future.successful(())
+    //      }
+    //    }
 
     // Initial fetch
-//    updateInfo()
+    //    updateInfo()
 
     // Schedule updates every 5 seconds
-//    val updateInterval = 5.seconds
-//    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
+    //    val updateInterval = 5.seconds
+    //    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
 
   } catch {
     case e: Exception => throw e
   } finally {
-//        k8s.close
-//        system.terminate
+    k8s.close
+    system.terminate
   }
 }
