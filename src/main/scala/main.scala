@@ -359,6 +359,8 @@ def main(): Unit = {
 
   val k8s = k8sInit
 
+
+
   try {
 
 
@@ -370,48 +372,35 @@ def main(): Unit = {
 
     var info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
 
-    def fetchKubernetesResources(): Future[KuberInfo] = {
+    def cordonNode(nodeName: String) = {
       for {
-        nodes <- k8s.list[NodeList]()
-        namespaces <- k8s.list[NamespaceList]()
-        pods <- Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))).map(_.flatten)
-        events <- k8s.list[EventList]()
-      } yield KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
+        node <- k8s.get[Node](nodeName)
+        newNode = node.copy(spec = node.spec.map(_.copy(unschedulable = true)))
+        updatedNode <- k8s.update(newNode)
+      } yield updatedNode
     }
 
-
-    val namespace = "default"
-    val nodesToExclude: Set[String] = Set()
-
-    def updateDeploymentAntiAffinity(deployment: Deployment, nodesToExclude: Set[String]): Deployment = {
-      val updatedPodSpec = deployment.spec.flatMap(_.template.flatMap(_.spec.map { spec =>
-        val affinity = spec.affinity.getOrElse(Affinity())
-        val updatedNodeAffinity = affinity.nodeAffinity.map { nodeAffinity =>
-          val updatedPreferred = nodeAffinity.preferredDuringSchedulingIgnoredDuringExecution :+
-            PreferredSchedulingTerm(
-              NodeSelectorTerm(nodesToExclude.toList.map { nodeName =>
-                NodeSelectorRequirement("kubernetes.io/hostname", NodeSelectorOperator.NotIn, List(nodeName))
-              }),
-              100
-            )
-          nodeAffinity.copy(preferredDuringSchedulingIgnoredDuringExecution = updatedPreferred)
-        }
-        spec.copy(affinity = Some(affinity.copy(nodeAffinity = updatedNodeAffinity)))
-      }))
-      deployment.copy(spec = deployment.spec.map(_.copy(template = deployment.spec.map(_.template.map(_.copy(spec = updatedPodSpec)).getOrElse(Template.Spec())))))
+    def deletePod(pod: Pod, gracePeriod: Int): Future[Unit] = {
+      val deleteOptions = DeleteOptions(gracePeriodSeconds = Some(gracePeriod))
+      k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace))
     }
 
+    def drainNode(nodeName: String, gracePeriod: Int): Future[Unit] = {
+      for {
+        podList <- k8s.list[PodList]()
+        nodePods = podList.items.filter(_.spec.exists(_.nodeName == nodeName))
+        _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
+      } yield ()
+    }
 
-    val deploymentsFut = k8s.list[DeploymentList]()
-    val updatedDeploymentsFut = deploymentsFut.map(_.items.map(updateDeploymentAntiAffinity(_, nodesToExclude)))
-//
-//    val resultFut = for {
-//      updatedDeployments <- updatedDeploymentsFut
-////      results <- Future.sequence(updatedDeployments.map(k8s.update(_)))
-//    } yield updatedDeployments
-////
-//    val results = Await.result(resultFut, 10.seconds)
-    val results = Await.result(updatedDeploymentsFut, 10.seconds)
+    val nodeName = "multinode-demo-m02"
+    val gracePeriod = 30 // Adjust the grace period as needed
+
+    // Cordon the node
+    Await.result(cordonNode(nodeName), 1.minute)
+
+    // Drain the node
+    Await.result(drainNode(nodeName, gracePeriod), 10.minutes)
 //    println(s"Updated Deployments:")
 //    results.foreach(result => println(s"  - ${result.metadata.name}"))
 
@@ -439,7 +428,7 @@ def main(): Unit = {
   } catch {
     case e: Exception => throw e
   } finally {
-        k8s.close
-        system.terminate
+//        k8s.close
+//        system.terminate
   }
 }
