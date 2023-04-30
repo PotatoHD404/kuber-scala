@@ -12,6 +12,7 @@ import skuber.Pod.Affinity.{NodeSelectorOperator, NodeSelectorRequirement, NodeS
 import skuber.api.client.EventType.EventType
 import skuber.api.client.{EventType, KubernetesClient, WatchEvent}
 import skuber.apps.v1.ReplicaSet.{Spec, Status}
+import skuber.autoscaling.v2beta1.HorizontalPodAutoscaler
 //import skuber.ext.{ReplicaSet, ReplicaSetList}
 //import skuber.apps.DeploymentList
 
@@ -468,6 +469,7 @@ def main(): Unit = {
     implicit val deployListDef: ResourceDefinition[ReplicaSetList] = new ResourceDefinition[ReplicaSetList] {
       def spec: ResourceSpecification = ReplicaSet.specification
     }
+
     def getResources: Future[(StatefulSetList, DeploymentList, ReplicaSetList)] = {
       for {
         statefulSets <- k8s.list[StatefulSetList]()
@@ -477,41 +479,81 @@ def main(): Unit = {
       } yield (statefulSets, deployments, replicaSets)
     }
 
+    def getAutoscaler(namespace: String, deploymentName: String): Future[Option[HorizontalPodAutoscaler]] = {
+      k8s.getOption[HorizontalPodAutoscaler](deploymentName, Some(namespace))
+    }
+
+    def disableAutoscaler(namespace: String, deploymentName: String): Future[Option[HorizontalPodAutoscaler]] = {
+      for {
+        maybeHPA <- getAutoscaler(namespace, deploymentName)
+        _ <- maybeHPA.map(hpa => k8s.delete[HorizontalPodAutoscaler](hpa.name, namespace = Some(namespace))).getOrElse(Future.successful(()))
+      } yield {
+        maybeHPA
+      }
+    }
+
+    def enableAutoscaler(hpa: HorizontalPodAutoscaler): Future[HorizontalPodAutoscaler] = {
+      k8s.create(hpa, Some(hpa.namespace))
+    }
+
+
     def drainNode(nodeName: String, gracePeriod: Int): Future[Unit] = {
       for {
+
         podList <- k8s.list[PodList]()
         nodePods = podList.items.filter(_.spec.exists(_.nodeName == nodeName))
 
         (statefulSets, deployments, replicaSets) <- getResources
 
-        updatedStatefulSets = statefulSets.items.map { ss =>
+        updatedStatefulSets = statefulSets.items.flatMap { ss =>
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("statefulset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ss.metadata.labels.get("app.kubernetes.io/name"))
-          increaseReplicas[StatefulSet](ss, increment)
+          increment match {
+            case 0 => None
+            case _ => Some(increaseReplicas[StatefulSet](ss, increment))
+          }
         }
-        updatedDeployments = deployments.items.map { d =>
+        updatedDeployments = deployments.items.flatMap { d =>
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == d.metadata.labels.get("app.kubernetes.io/name"))
-          increaseReplicas[Deployment](d, increment)
+          increment match {
+            case 0 => None
+            case _ => Some(increaseReplicas[Deployment](d, increment))
+          }
         }
-        updatedReplicaSets = replicaSets.items.map { rs =>
+        updatedReplicaSets = replicaSets.items.flatMap { rs =>
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("replicaset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == rs.metadata.labels.get("app.kubernetes.io/name"))
-          increaseReplicas[ReplicaSet](rs, increment)
+          increment match {
+            case 0 => None
+            case _ => Some(increaseReplicas[ReplicaSet](rs, increment))
+          }
         }
-        //        updatedDaemonSets = daemonSets.items.map { ds =>
-        //          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("daemonset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ds.metadata.labels.get("app.kubernetes.io/name"))
-        //          increaseReplicas[DaemonSet](ds, increment)
-        //        }
+        //noinspection DuplicatedCode
+        autoscalersData: List[(String, String)] = (updatedReplicaSets.map(rs => (rs.metadata.namespace,
+          rs.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
+          updatedDeployments.map(d => (d.metadata.namespace,
+            d.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
+          updatedStatefulSets.map(ss => (ss.metadata.namespace,
+            ss.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get))).distinct
 
-        _ <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
-        _ <- Future.sequence(updatedDeployments.map(k8s.update(_)))
-        _ <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
-        //        _ <- Future.sequence(updatedDaemonSets.map(k8s.update(_)))
+        disabledAutoscalers <- Future.sequence(autoscalersData.map(t => disableAutoscaler(t._1, t._2)))
+
+        filteredDisabledAutoscalers = disabledAutoscalers.filter(_.isDefined).map(_.get)
+
+        //        updatedStatefulSets
+
+        scaledStatefulSets <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
+        scaledDeployments <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+        scaledReplicaSets <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
+
+
 
         _ <- waitUntilAllPodsRunning()
         _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
+
+        _ <- Future.sequence(filteredDisabledAutoscalers.map(enableAutoscaler))
       } yield ()
     }
 
-    val nodeName = "multinode-demo"
+    val nodeName = "multinode-demo-m02"
     val gracePeriod = 30 // Adjust the grace period as needed
 
     //    Cordon the node
