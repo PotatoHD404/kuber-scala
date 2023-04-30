@@ -411,17 +411,37 @@ def main(): Unit = {
     }
 
 
-    def waitUntilAllPodsRunning(pollInterval: FiniteDuration = 5.seconds, timeout: FiniteDuration = 5.minutes): Future[Unit] = {
+    def waitUntilAllPodsRunning(statefulSets: List[StatefulSet],
+                                deployments: List[Deployment],
+                                replicaSets: List[ReplicaSet],
+                                pollInterval: FiniteDuration = 5.seconds,
+                                timeout: FiniteDuration = 5.minutes
+                               ): Future[Unit] = {
       val deadline = timeout.fromNow
-
+      println(s"Waiting for pods to be running. Deployments: ${deployments.length}, StatefulSets: ${statefulSets.length}, ReplicaSets: ${replicaSets.length}")
+      println(deployments)
       def checkPods(): Future[Boolean] = {
         for {
           podList <- k8s.list[PodList]()
         } yield {
-          println(podList.items.map(_.status.flatMap(_.phase)))
-          val condition = podList.items.forall(_.status.exists(_.phase.contains(Phase.Running)))
-          println(condition)
-          condition
+          val allResourceNames = statefulSets.map(_.metadata.name) ++
+            deployments.map(_.metadata.name) ++
+            replicaSets.map(_.metadata.name)
+
+          val relevantPods = podList.items.filter(pod =>
+            allResourceNames.contains(pod.metadata.labels("app"))
+          )
+
+          val expectedPodCount = statefulSets.map(_.spec.map(_.replicas.getOrElse(0)).getOrElse(0)).sum +
+            deployments.map(_.spec.map(_.replicas.getOrElse(0)).getOrElse(0)).sum +
+            replicaSets.map(_.spec.map(_.replicas.getOrElse(0)).getOrElse(0)).sum
+
+          println(s"Relevant pod count: ${relevantPods.length}, Expected pod count: $expectedPodCount")
+
+          val correctPodCount = relevantPods.length == expectedPodCount
+          val allPodsRunning = relevantPods.forall(_.status.exists(_.phase.contains(Phase.Running)))
+
+          correctPodCount && allPodsRunning
         }
       }
 
@@ -506,14 +526,20 @@ def main(): Unit = {
         (statefulSets, deployments, replicaSets) <- getResources
 
         updatedStatefulSets = statefulSets.items.flatMap { ss =>
+
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("statefulset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ss.metadata.labels.get("app.kubernetes.io/name"))
+          println(s"Found $increment pods for statefulset ${ss.metadata.name}")
           increment match {
             case 0 => None
             case _ => Some(increaseReplicas[StatefulSet](ss, increment))
           }
         }
         updatedDeployments = deployments.items.flatMap { d =>
+          println(nodePods.length)
+          nodePods.foreach(p => println(p.metadata.labels))
+          println(d.metadata.labels)
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == d.metadata.labels.get("app.kubernetes.io/name"))
+          println(s"Found $increment pods for deployment ${d.metadata.name}")
           increment match {
             case 0 => None
             case _ => Some(increaseReplicas[Deployment](d, increment))
@@ -521,6 +547,7 @@ def main(): Unit = {
         }
         updatedReplicaSets = replicaSets.items.flatMap { rs =>
           val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("replicaset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == rs.metadata.labels.get("app.kubernetes.io/name"))
+          println(s"Found $increment pods for replicaset ${rs.metadata.name}")
           increment match {
             case 0 => None
             case _ => Some(increaseReplicas[ReplicaSet](rs, increment))
@@ -540,13 +567,13 @@ def main(): Unit = {
 
         //        updatedStatefulSets
 
-        scaledStatefulSets <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
-        scaledDeployments <- Future.sequence(updatedDeployments.map(k8s.update(_)))
-        scaledReplicaSets <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
+
+        _ <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
+        _ <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+        _ <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
 
 
-
-        _ <- waitUntilAllPodsRunning()
+        _ <- waitUntilAllPodsRunning(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
         _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
 
         _ <- Future.sequence(filteredDisabledAutoscalers.map(enableAutoscaler))
