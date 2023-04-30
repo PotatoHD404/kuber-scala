@@ -4,8 +4,9 @@ import akka.http.scaladsl.client.RequestBuilding.Patch
 import akka.stream.scaladsl.{Flow, Keep, Sink}
 import akka.stream.{ActorMaterializer, FlowShape, Graph}
 import jdk.internal.net.http.common.Log.logError
-import play.api.libs.json.{Format, JsPath}
+import play.api.libs.json.{Format, JsPath, __}
 import skuber.*
+import skuber.LabelSelector.dsl.strToReq
 import skuber.Pod.{Affinity, Phase, Template}
 import skuber.Pod.Affinity.NodeAffinity.PreferredSchedulingTerm
 import skuber.Pod.Affinity.{NodeSelectorOperator, NodeSelectorRequirement, NodeSelectorTerm}
@@ -13,6 +14,10 @@ import skuber.api.client.EventType.EventType
 import skuber.api.client.{EventType, KubernetesClient, WatchEvent}
 import skuber.apps.v1.ReplicaSet.{Spec, Status}
 import skuber.autoscaling.v2beta1.HorizontalPodAutoscaler
+//import skuber.policy.v1beta1.PodDisruptionBudget
+//import skuber.policy.v1beta1.PodDisruptionBudget
+
+import scala.language.reflectiveCalls
 //import skuber.ext.{ReplicaSet, ReplicaSetList}
 //import skuber.apps.DeploymentList
 
@@ -29,6 +34,8 @@ import java.util.Optional
 import scala.concurrent.duration.*
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.util.Try
+import reflect.Selectable.reflectiveSelectable
+import skuber.LabelSelector.dsl.reqToSel
 
 
 def formatDuration(duration: Duration): String = {
@@ -392,23 +399,70 @@ def main(): Unit = {
       } yield updatedNode
     }
 
-    def deletePod(pod: Pod, gracePeriod: Int): Future[Unit] = {
-      val deleteOptions = DeleteOptions(gracePeriodSeconds = Some(gracePeriod))
-      k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace))
+    def setDeleteFirstLabel(pod: Pod): Future[Pod] = {
+      val updatedPod = pod.copy(
+        metadata = pod.metadata.copy(
+          labels = pod.metadata.labels + ("delete-first" -> "true")
+        )
+      )
+
+      k8s.update(updatedPod)
     }
 
-    def scaleDeployments(namespace: String, factor: Int): Future[Unit] = {
-      for {
-        deploymentList <- k8s.list[DeploymentList](Some(namespace))
-        _ <- Future.sequence(
-          deploymentList.items.map { deployment =>
-            val newReplicas = deployment.spec.flatMap(_.replicas).getOrElse(0) + factor
-            val updatedDeployment = deployment.copy(spec = deployment.spec.map(_.copy(replicas = Some(newReplicas))))
-            k8s.update(updatedDeployment)
-          }
-        )
-      } yield ()
+    //    def deletePod(pod: Pod): Future[Unit] = {
+    //
+    //
+    //      if (deploymentNameOpt.isDefined) {
+    //        for {
+    //          _ <- setDeleteFirstLabel(pod)
+    //          _ <- getOrCreatePodDisruptionBudget(namespace, s"${deploymentNameOpt.get}-pdb")
+    //        } yield ()
+    //      } else {
+    //        Future.successful(())
+    //      }
+    //    }
+
+    def updatePodDisruptionBudgetIfNeeded(pdb: PodDisruptionBudget): Future[PodDisruptionBudget] = {
+      val expectedSpec = PodDisruptionBudget.Spec(
+        minAvailable = Some(1),
+        selector = Some("delete-first" is "true")
+      )
+
+      if (pdb.spec.contains(expectedSpec)) {
+        Future.successful(pdb)
+      } else {
+        val updatedPdb = pdb.copy(spec = Some(expectedSpec))
+        k8s.update(updatedPdb)
+      }
     }
+
+    def getOrCreatePodDisruptionBudget(namespace: String, name: String): Future[PodDisruptionBudget] = {
+      val pdb = PodDisruptionBudget(
+        metadata = ObjectMeta(name = name, namespace = namespace),
+        spec = Some(PodDisruptionBudget.Spec(
+          minAvailable = Some(1),
+          selector = Some("delete-first" is "true")
+        ))
+      )
+
+      k8s.getOption[PodDisruptionBudget](name, Some(namespace)).flatMap {
+        case Some(existingPdb) => updatePodDisruptionBudgetIfNeeded(existingPdb)
+        case None => k8s.create(pdb)
+      }
+    }
+
+    //    def scaleDeployments(namespace: String, factor: Int): Future[Unit] = {
+    //      for {
+    //        deploymentList <- k8s.list[DeploymentList](Some(namespace))
+    //        _ <- Future.sequence(
+    //          deploymentList.items.map { deployment =>
+    //            val newReplicas = deployment.spec.flatMap(_.replicas).getOrElse(0) + factor
+    //            val updatedDeployment = deployment.copy(spec = deployment.spec.map(_.copy(replicas = Some(newReplicas))))
+    //            k8s.update(updatedDeployment)
+    //          }
+    //        )
+    //      } yield ()
+    //    }
 
 
     def waitUntilAllPodsRunning(statefulSets: List[StatefulSet],
@@ -419,7 +473,8 @@ def main(): Unit = {
                                ): Future[Unit] = {
       val deadline = timeout.fromNow
       println(s"Waiting for pods to be running. Deployments: ${deployments.length}, StatefulSets: ${statefulSets.length}, ReplicaSets: ${replicaSets.length}")
-      println(deployments)
+      //      println(deployments)
+
       def checkPods(): Future[Boolean] = {
         for {
           podList <- k8s.list[PodList]()
@@ -525,41 +580,52 @@ def main(): Unit = {
 
         (statefulSets, deployments, replicaSets) <- getResources
 
-        updatedStatefulSets = statefulSets.items.flatMap { ss =>
 
-          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("statefulset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == ss.metadata.labels.get("app.kubernetes.io/name"))
-          println(s"Found $increment pods for statefulset ${ss.metadata.name}")
-          increment match {
-            case 0 => None
-            case _ => Some(increaseReplicas[StatefulSet](ss, increment))
-          }
-        }
-        updatedDeployments = deployments.items.flatMap { d =>
+        (updatedDeployments, deploymentsIncrements) = deployments.items.flatMap { d =>
           println(nodePods.length)
           nodePods.foreach(p => println(p.metadata.labels))
           println(d.metadata.labels)
-          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == d.metadata.labels.get("app.kubernetes.io/name"))
+          val increment = nodePods.count(pod => pod.metadata.labels.get("app") == d.metadata.labels.get("app"))
           println(s"Found $increment pods for deployment ${d.metadata.name}")
           increment match {
             case 0 => None
-            case _ => Some(increaseReplicas[Deployment](d, increment))
+            case _ => Some((increaseReplicas[Deployment](d, increment), increment))
           }
-        }
-        updatedReplicaSets = replicaSets.items.flatMap { rs =>
-          val increment = nodePods.count(pod => pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("replicaset-controller") && pod.metadata.labels.get("app.kubernetes.io/name") == rs.metadata.labels.get("app.kubernetes.io/name"))
-          println(s"Found $increment pods for replicaset ${rs.metadata.name}")
-          increment match {
-            case 0 => None
-            case _ => Some(increaseReplicas[ReplicaSet](rs, increment))
+        }.unzip
+        deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
+        (updatedReplicaSets, replicaSetsIncrements) = replicaSets.items.flatMap { rs =>
+          if (deploymentNames.contains(rs.metadata.labels.get("app"))) {
+            None
+          } else {
+            val increment = nodePods.count(pod => pod.metadata.labels.get("app") == rs.metadata.labels.get("app"))
+            println(s"Found $increment pods for replicaset ${rs.metadata.name}")
+            increment match {
+              case 0 => None
+              case _ => Some((increaseReplicas[ReplicaSet](rs, increment), increment))
+            }
           }
-        }
+        }.unzip
+
+        (updatedStatefulSets, statefulSetsIncrements) = statefulSets.items.flatMap { ss =>
+          if (deploymentNames.contains(ss.metadata.labels.get("app"))) {
+            None
+          } else {
+            val increment = nodePods.count(pod => pod.metadata.labels.get("app") == ss.metadata.labels.get("app"))
+            println(s"Found $increment pods for statefulset ${ss.metadata.name}")
+            increment match {
+              case 0 => None
+              case _ => Some((increaseReplicas[StatefulSet](ss, increment), increment))
+            }
+          }
+        }.unzip
         //noinspection DuplicatedCode
-        autoscalersData: List[(String, String)] = (updatedReplicaSets.map(rs => (rs.metadata.namespace,
-          rs.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
+        autoscalersData: List[(String, String)]
+          = (updatedReplicaSets.map(rs => (rs.metadata.namespace,
+          rs.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
           updatedDeployments.map(d => (d.metadata.namespace,
-            d.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
+            d.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
           updatedStatefulSets.map(ss => (ss.metadata.namespace,
-            ss.metadata.labels.get("app.kubernetes.io/name"))).filter(_._2.isDefined).map(t => (t._1, t._2.get))).distinct
+            ss.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get))).distinct
 
         disabledAutoscalers <- Future.sequence(autoscalersData.map(t => disableAutoscaler(t._1, t._2)))
 
@@ -568,16 +634,48 @@ def main(): Unit = {
         //        updatedStatefulSets
 
 
-        _ <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
-        _ <- Future.sequence(updatedDeployments.map(k8s.update(_)))
-        _ <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
+        updatedStatefulSets <- Future.sequence(updatedStatefulSets.map(k8s.update(_)))
+        updatedDeployments <- Future.sequence(updatedDeployments.map(k8s.update(_)))
+        updatedReplicaSets <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
 
 
         _ <- waitUntilAllPodsRunning(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
-        _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
+        //        getOrCreatePodDisruptionBudget(namespace, s"${deploymentNameOpt.get}-pdb")
+
+        _ <- Future.sequence(nodePods.map(setDeleteFirstLabel))
+
+        _ <- Future.sequence(nodePods.map(pod => (pod.namespace, pod.metadata.labels.get("app"))).
+          filter(_._2.isDefined).map(el => (el._1, el._2.get)).distinct.
+          map(t => getOrCreatePodDisruptionBudget(t._1, s"${t._2}-pdb")))
+
+        //        val namespace = pod.namespace
+        //
+        //        //      val managedByDeployment = pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller")
+        //        val deploymentNameOpt = pod.metadata.labels.get("app")
+
+        //noinspection DuplicatedCode
+        updatedStatefulSets <- Future.sequence(updatedStatefulSets.zip(statefulSetsIncrements).map { (resource, increment) =>
+          k8s.get[StatefulSet](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
+            k8s.update(increaseReplicas(fetchedResource, -increment))
+          }
+        })
+        updatedDeployments <- Future.sequence(updatedDeployments.zip(deploymentsIncrements).map { (resource, increment) =>
+          k8s.get[Deployment](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
+            k8s.update(increaseReplicas(fetchedResource, -increment))
+          }
+        })
+        updatedReplicaSets <- Future.sequence(updatedReplicaSets.zip(replicaSetsIncrements).map { (resource, increment) =>
+          k8s.get[ReplicaSet](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
+            k8s.update(increaseReplicas(fetchedResource, -increment))
+          }
+        })
+
+        _ <- waitUntilAllPodsRunning(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
 
         _ <- Future.sequence(filteredDisabledAutoscalers.map(enableAutoscaler))
-      } yield ()
+      }
+
+      yield ()
     }
 
     val nodeName = "multinode-demo-m02"
@@ -612,9 +710,11 @@ def main(): Unit = {
     //    val updateInterval = 5.seconds
     //    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
 
-  } catch {
+  }
+  catch {
     case e: Exception => throw e
-  } finally {
+  }
+  finally {
     k8s.close
     system.terminate
   }
