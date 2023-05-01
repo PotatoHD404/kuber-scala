@@ -1,7 +1,7 @@
 package terraform.Resources
 
 // Scaling resources
-case class ScalingGroup(name: String, minSize: Int, maxSize: Int, vm: VM) extends TerraformResource {
+case class ScalingGroup(name: String, minSize: Int, maxSize: Int, vm: VM) extends InfrastructureResource {
   override def toHCL: String =
     s"""resource "aws_autoscaling_group" "$name" {
        | name = "$name"

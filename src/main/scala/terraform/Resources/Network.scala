@@ -3,7 +3,7 @@ package terraform.Resources
 import terraform.{AWS, AzureRM, CIDRBlock}
 
 // Network resources
-case class Network(name: String, cidrBlock: CIDRBlock, provider: Provider) extends TerraformResource {
+case class Network(name: String, cidrBlock: CIDRBlock, provider: Provider) extends InfrastructureResource {
   override def toHCL: String = provider.providerType match {
     case AWS => s"""resource "aws_vpc" "$name" {
                    |  cidr_block = "$cidrBlock"

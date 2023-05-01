@@ -5,7 +5,7 @@ import terraform.{AWS, AzureRM, ProviderType, Region}
 //import terraform.{AWS, AzureRM, ProviderType, Region}
 
 
-case class Provider(name: String, region: Region, providerType: ProviderType) extends TerraformResource {
+case class Provider(name: String, region: Region, providerType: ProviderType) extends InfrastructureResource {
   override def toHCL: String = providerType match {
     case AWS => s"""provider "aws" {
                    |  region = "${region.value}"

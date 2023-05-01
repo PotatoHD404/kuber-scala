@@ -3,7 +3,7 @@ package terraform.Resources
 import terraform.{AWS, AzureRM}
 
 // VM resources
-case class VM(name: String, image: String, size: String, provider: Provider) extends TerraformResource {
+case class VM(name: String, image: String, size: String, provider: Provider) extends InfrastructureResource {
   override def toHCL: String = provider.providerType match {
     case AWS => s"""resource "aws_instance" "$name" {
                    |  ami           = "$image"
