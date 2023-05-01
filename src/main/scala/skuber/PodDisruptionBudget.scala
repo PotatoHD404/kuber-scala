@@ -1,9 +1,11 @@
+package skuber
+
 import skuber.ResourceSpecification.{Names, Scope}
 import skuber.{IntOrString, LabelSelector, ListResource, NonCoreResourceSpecification, ObjectMeta, ObjectResource, ResourceDefinition, Timestamp}
 
 
 
-case class PodDisruptionBudget(override val kind: String = "PodDisruptionBudget",
+case class PodDisruptionBudget(override val kind: String = "skuber.PodDisruptionBudget",
                                override val apiVersion: String = policyAPIVersion,
                                metadata: ObjectMeta,
                                spec: Option[PodDisruptionBudget.Spec] = None,
@@ -35,7 +37,7 @@ object PodDisruptionBudget {
     scope = Scope.Namespaced,
     names = Names(plural = "poddisruptionbudgets",
       singular = "poddisruptionbudget",
-      kind = "PodDisruptionBudget",
+      kind = "skuber.PodDisruptionBudget",
       shortNames = List("pdb")))
   implicit val stsDef: ResourceDefinition[PodDisruptionBudget] = new ResourceDefinition[PodDisruptionBudget] {
     def spec: NonCoreResourceSpecification = specification
@@ -55,9 +57,9 @@ object PodDisruptionBudget {
                     expectedPods: Int,
                     observedGeneration: Option[Int])
 
-  import play.api.libs.functional.syntax._
+  import play.api.libs.functional.syntax.*
   import play.api.libs.json.{Format, JsPath}
-  import skuber.json.format._
+  import skuber.json.format.*
 
   implicit val depStatusFmt: Format[Status] = ((JsPath \ "currentHealthy").formatMaybeEmptyInt() and
     (JsPath \ "desiredHealthy").formatMaybeEmptyInt() and
