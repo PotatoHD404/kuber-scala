@@ -1,13 +1,17 @@
 
-sealed trait ProviderType { def name: String }
-case object AWSObj extends ProviderType { val name = "aws" }
-case object AzureRMObj extends ProviderType { val name = "azurerm" }
+//sealed trait ProviderType { def name: String }
+//case object AWSObj extends ProviderType { val name = "aws" }
+//case object AzureRMObj extends ProviderType { val name = "azurerm" }
+//
+//// define AWS type
+//type AWS = AWSObj.type
+//
+//// define AzureRM type
+//type AzureRM = AzureRMObj.type
 
-// define AWS type
-type AWS = AWSObj.type
-
-// define AzureRM type
-type AzureRM = AzureRMObj.type
+sealed trait ProviderType
+sealed trait AWS extends ProviderType
+sealed trait AzureRM extends ProviderType
 
 abstract class TerraformResource[T <: ProviderType] {
   def toHCL: String
