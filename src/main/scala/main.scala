@@ -5,67 +5,23 @@ import skuber.{EventList, NamespaceList, NodeList, PodList, cordonNode, drainNod
 
 import concurrent.duration.DurationInt
 import skuber.json.format.*
+import terraform._
 
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 @main
 def main(): Unit = {
+  val provider = Provider("aws", "us-west-2")
+  val credentials = Credentials(provider, "ACCESS_KEY", "SECRET_KEY")
+  val network = Network("example", "10.0.0.0/16")
+  val subnet = Subnet("example", network, "10.0.1.0/24")
+  val securityGroup = SecurityGroup("example")
+  val securityRule = SecurityRule("example", securityGroup, "tcp", "0.0.0.0/0", "10.0.0.0/8", "22-22")
+  val s3Bucket = S3Bucket("example")
+  val vm = VM("example", "Canonical:UbuntuServer:18.04-LTS:latest", "Standard_B1s")
+  val scalingGroup = ScalingGroup("example", 1, 3, vm)
 
-  implicit val system: ActorSystem = ActorSystem()
-  implicit val dispatcher: ExecutionContextExecutor = system.dispatcher
-
-  implicit val k8s: KubernetesClient = k8sInit
-
-
-  try {
-
-
-    val nodes = Await.result(k8s.list[NodeList](), 10.seconds)
-
-    val namespaces = Await.result(k8s.list[NamespaceList](), 10.seconds)
-    val pods = Await.result(Future.sequence(namespaces.items.map(el => k8s.list[PodList](Some(el.name)))), 10.seconds).flatten
-    val events = Await.result(k8s.list[EventList](), 10.seconds)
-
-    var info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
-
-    val nodeNames = List("multinode-demo-m02")
-    val gracePeriod = 30 // Adjust the grace period as needed
-
-    //    Cordon the node
-    Await.result(Future.sequence(nodeNames.map(cordonNode)), 1.minute)
-
-    //    Drain the node
-    Await.result(drainNodes(nodeNames, gracePeriod), 10.minutes)
-    //    println(s"Updated Deployments:")
-    //    results.foreach(result => println(s"  - ${result.metadata.name}"))
-
-    //    def updateInfo(): Future[Unit] = {
-    //      fetchKubernetesResources().flatMap { newInfo =>
-    //        println(newInfo.toJson.prettyPrint)
-    //        if (info != newInfo) {
-    //          info = newInfo
-    //
-    //
-    //        } else {
-    //          println("no change")
-    //        }
-    //        Future.successful(())
-    //      }
-    //    }
-
-    // Initial fetch
-    //    updateInfo()
-
-    // Schedule updates every 5 seconds
-    //    val updateInterval = 5.seconds
-    //    val scheduler = system.scheduler.scheduleAtFixedRate(updateInterval, updateInterval)(() => updateInfo())
-
-  }
-  catch {
-    case e: Exception => throw e
-  }
-  finally {
-    k8s.close
-    system.terminate
-  }
+  val resources = List(provider, credentials, network, subnet, securityGroup, securityRule, s3Bucket, vm, scalingGroup)
+  val hclCode = TerraformGenerator.generateHCL(resources)
+  println(hclCode)
 }
