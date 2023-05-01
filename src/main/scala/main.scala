@@ -13,16 +13,11 @@ import skuber.Pod.Affinity.{NodeSelectorOperator, NodeSelectorRequirement, NodeS
 import skuber.api.client.EventType.EventType
 import skuber.api.client.{EventType, KubernetesClient, WatchEvent}
 import skuber.apps.v1.ReplicaSet.{Spec, Status}
-import skuber.autoscaling.v2beta1.HorizontalPodAutoscaler
-//import skuber.policy.v1beta1.PodDisruptionBudget
-//import skuber.policy.v1beta1.PodDisruptionBudget
+import skuber.autoscaling.v2beta1.{HorizontalPodAutoscaler, HorizontalPodAutoscalerList}
 
 import scala.language.reflectiveCalls
-//import skuber.ext.{ReplicaSet, ReplicaSetList}
-//import skuber.apps.DeploymentList
 
 import scala.concurrent.TimeoutException
-//import skuber.apps.DeploymentList
 import skuber.apps.v1.{Deployment, DeploymentList, StatefulSetList, StatefulSet}
 import skuber.apps.v1._
 import skuber.json.format.*
@@ -196,10 +191,6 @@ object MyPod {
       events = newEvents.map(el => el.uid -> el).toMap,
       uid = pod.metadata.uid,
       conditions = pod.status.get.conditions.map(el => el.`_type` -> stringToBoolean(el.status)).toMap
-      //      failedScheduling = pod.metadata.uid.map { uid =>
-      //        val events = k8s.events.listInNamespace(pod.namespace).filter(_.involvedObject.uid.contains(uid))
-      //        events.exists(_.reason.contains("FailedScheduling"))
-      //      }.getOrElse(false)
     )
   }
 }
@@ -250,82 +241,12 @@ object MyNode {
     )
   }
 }
-
-//def isRedistributable(pod: MyPod): Boolean = {
-//  !pod.isSystem
-//}
 //
 case class KuberInfo(nodes: Map[String, MyNode],
                      podsWithoutNode: Map[String, MyPod],
                      unscheduledPods: Map[String, MyPod],
                      events: List[MyEvent],
                      namespaces: Set[String])
-//                     {
-//  def redistributePods()(implicit k8s: KubernetesClient): Future[Unit] = {
-//    // Find the nodes with redistributable pods
-//    val nodesWithRedistributablePods = nodes.values.filter { node =>
-//      node.pods.values.exists(isRedistributable)
-//    }
-//
-//    // Make nodes with redistributable pods unschedulable
-//    val makeNodesUnschedulable = nodesWithRedistributablePods.map { node =>
-//      k8s.patch[Node](
-//        node.name,
-//        Patch(
-//          List(
-//            PatchOp.Replace(
-//              "/spec/unschedulable",
-//              JsBoolean(true)
-//            )
-//          )
-//        )
-//      )
-//    }
-//
-//    // Collect redistributable pods from the nodes
-//    val redistributablePods = nodesWithRedistributablePods.flatMap(_.pods.values.filter(isRedistributable)).toList
-//
-//    // Schedule redistributable pods to other nodes
-////    val scheduleRedistributablePods = redistributablePods.map { pod =>
-////      k8s.create[Pod](
-////        Pod(
-////          metadata = ObjectMeta(
-////            name = pod.name,
-////            namespace = pod.namespace
-////          ),
-////          spec = Some(Pod.Spec(
-////            containers = pod.containers
-////          ))
-////        ),
-////        Some(pod.namespace)
-////      )
-////    }
-//
-//    // Wait for all pods to be scheduled and running
-//    val waitForPodsRunning = scheduleRedistributablePods.map { scheduledPodFut =>
-//      scheduledPodFut.flatMap { scheduledPod =>
-//        k8s.waitForStatus[Pod](
-//          scheduledPod.metadata.name,
-//          scheduledPod.metadata.namespace,
-//          (pod: Pod) => pod.status.exists(_.phase.contains("Running"))
-//        )
-//      }
-//    }
-//
-//    // Send termination signal to nodes with redistributable pods
-//    val terminateNodes = nodesWithRedistributablePods.map { node =>
-//      k8s.delete[Node](node.name)
-//    }
-//
-//    // Execute the above steps sequentially
-//    for {
-//      _ <- Future.sequence(makeNodesUnschedulable)
-//      _ <- Future.sequence(scheduleRedistributablePods)
-//      _ <- Future.sequence(waitForPodsRunning)
-//      _ <- Future.sequence(terminateNodes)
-//    } yield ()
-//  }
-//}
 
 object KuberInfo {
   def fromNodesAndPods(nodes: List[Node], pods: List[Pod], events: List[Event], namespaces: NamespaceList): KuberInfo = {
@@ -437,7 +358,6 @@ def main(): Unit = {
                                 ): Future[Unit] = {
       val deadline = timeout.fromNow
       println(s"Waiting for pods to be running. Deployments: ${deployments.length}, StatefulSets: ${statefulSets.length}, ReplicaSets: ${replicaSets.length}")
-      //      println(deployments)
 
       def checkPods(): Future[Boolean] = {
         for {
@@ -494,8 +414,6 @@ def main(): Unit = {
           deployment.copy(spec = deployment.spec.map(_.copy(replicas = Some(deployment.spec.flatMap(_.replicas).getOrElse(0) + increment)))).asInstanceOf[T]
         case replicaSet: ReplicaSet =>
           replicaSet.copy(spec = replicaSet.spec.map(_.copy(replicas = Some(replicaSet.spec.flatMap(_.replicas).getOrElse(0) + increment)))).asInstanceOf[T]
-        //        case daemonSet: DaemonSet =>
-        //          daemonSet.copy(spec = daemonSet.spec.map(_.copy(updateStrategy = daemonSet.spec.flatMap(_.updateStrategy).map(_.copy(rollingUpdate = daemonSet.spec.flatMap(_.updateStrategy.flatMap(_.rollingUpdate)).map(_.copy(maxUnavailable = 0))))))).asInstanceOf[T]
         case _ => resource
       }
     }
@@ -561,19 +479,12 @@ def main(): Unit = {
       }.unzip
     }
 
-    def extractAutoscalersData[T <: ObjectResource](resources: List[T]): List[(String, String)] = {
-      resources
-        .map(resource => (resource.metadata.namespace, resource.metadata.labels.get("app")))
-        .filter(_._2.isDefined)
-        .map(t => (t._1, t._2.get))
-    }
 
-
-    def drainNode(nodeName: String, gracePeriod: Int): Future[Unit] = {
+    def drainNodes(nodeNames: List[String], gracePeriod: Int): Future[Unit] = {
       for {
 
         podList <- k8s.list[PodList]()
-        nodePods = podList.items.filter(_.spec.exists(_.nodeName == nodeName))
+        nodePods = podList.items.filter(_.spec.exists(el => nodeNames.contains(el.nodeName)))
 
         (statefulSets, deployments, replicaSets) <- getResources
 
@@ -582,14 +493,9 @@ def main(): Unit = {
         deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
         (updatedReplicaSets, replicaSetsIncrements) = processResources(replicaSets.items, nodePods, deploymentNames)
         (updatedStatefulSets, statefulSetsIncrements) = processResources(statefulSets.items, nodePods, deploymentNames)
-        //noinspection DuplicatedCode
-        autoscalersData: List[(String, String)] = (
-          extractAutoscalersData(updatedReplicaSets) ++
-            extractAutoscalersData(updatedDeployments) ++
-            extractAutoscalersData(updatedStatefulSets)
-          ).distinct
 
-        disabledAutoscalers <- Future.sequence(autoscalersData.map(t => disableAutoscaler(t._1, t._2)))
+        autoscalers <- k8s.list[HorizontalPodAutoscalerList]()
+        disabledAutoscalers <- Future.sequence(autoscalers.map(hpa => disableAutoscaler(hpa.metadata.namespace, hpa.metadata.name)))
 
         filteredDisabledAutoscalers = disabledAutoscalers.filter(_.isDefined).map(_.get)
 
@@ -602,15 +508,9 @@ def main(): Unit = {
 
 
         _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
-        //        getOrCreatePodDisruptionBudget(namespace, s"${deploymentNameOpt.get}-pdb")
 
         _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
 
-        //        val namespace = pod.namespace
-        //
-        //        //      val managedByDeployment = pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller")
-        //        val deploymentNameOpt = pod.metadata.labels.get("app")
-        //        _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, false)
         _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, checkRunning = false)
         //noinspection DuplicatedCode
         updatedStatefulSets <- Future.sequence(updatedStatefulSets.zip(statefulSetsIncrements).map { (resource, increment) =>
@@ -631,33 +531,6 @@ def main(): Unit = {
 
           }
         })
-        //noinspection DuplicatedCode
-        //        updatedStatefulSets <- Future.sequence(updatedStatefulSets.zip(statefulSetsIncrements).map { (resource, increment) =>
-        //          val updatedResource = increaseReplicas(resource, -increment)
-        //          for {
-        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map { scale =>
-        //              k8s.updateScale(resource.name, scale.copy(spec = Scale.Spec(updatedResource.spec.get.replicas.map(_ - increment))), Some(resource.namespace))
-        //            }
-        //          } yield updatedResource
-        //        })
-        //        //noinspection DuplicatedCode
-        //        updatedDeployments <- Future.sequence(updatedDeployments.zip(deploymentsIncrements).map { (resource, increment) =>
-        //          val updatedResource = increaseReplicas(resource, -increment)
-        //          for {
-        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map { scale =>
-        //              k8s.updateScale(resource.name, scale.copy(spec = Scale.Spec(updatedResource.spec.get.replicas.map(_ - increment))), Some(resource.namespace))
-        //            }
-        //          } yield updatedResource
-        //        })
-        //        //noinspection DuplicatedCode
-        //        updatedReplicaSets <- Future.sequence(updatedReplicaSets.zip(replicaSetsIncrements).map { (resource, increment) =>
-        //          val updatedResource = increaseReplicas(resource, - increment)
-        //          for {
-        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map {scale =>
-        //            k8s.updateScale (resource.name, scale.copy (spec = Scale.Spec (updatedResource.spec.get.replicas.map (_ - increment))), Some (resource.namespace))
-        //          }
-        //          } yield updatedResource
-        //        })
 
         _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
 
@@ -667,14 +540,14 @@ def main(): Unit = {
       yield ()
     }
 
-    val nodeName = "multinode-demo-m02"
+    val nodeNames = List("multinode-demo-m02")
     val gracePeriod = 30 // Adjust the grace period as needed
 
     //    Cordon the node
-    Await.result(cordonNode(nodeName), 1.minute)
+    Await.result(Future.sequence(nodeNames.map(cordonNode)), 1.minute)
 
     //    Drain the node
-    Await.result(drainNode(nodeName, gracePeriod), 10.minutes)
+    Await.result(drainNodes(nodeNames, gracePeriod), 10.minutes)
     //    println(s"Updated Deployments:")
     //    results.foreach(result => println(s"  - ${result.metadata.name}"))
 
