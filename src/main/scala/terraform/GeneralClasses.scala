@@ -1,15 +1,37 @@
 package terraform
 
+import scala.util.matching.Regex
+
 abstract class TerraformResource {
   def toHCL: String
 }
 
+case class Region(value: String)
+case class CIDRBlock(value: String) {
+  private val cidrPattern: Regex = """^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\/\d{1,2})$""".r
+  require(cidrPattern.matches(value), s"Invalid CIDR block: $value")
+}
+case class PortRange(from: Int, to: Int) {
+  require(from >= 0 && from <= 65535, s"Invalid from port: $from")
+  require(to >= 0 && to <= 65535, s"Invalid to port: $to")
+  require(from <= to, s"From port ($from) must be less than or equal to the to port ($to)")
+}
+sealed trait ProviderType { def name: String }
+case object AWS extends ProviderType { val name = "aws" }
+case object AzureRM extends ProviderType { val name = "azurerm" }
+case class Image(publisher: String, offer: String, sku: String)
+
 // General resources
-case class Provider(name: String, region: String) extends TerraformResource {
-  override def toHCL: String =
-    s"""provider "$name" {
-       |  region = "$region"
-       |}""".stripMargin
+case class Provider(name: String, region: Region, providerType: ProviderType) extends TerraformResource {
+  override def toHCL: String = providerType match {
+    case AWS => s"""provider "aws" {
+                        |  region = "${region.value}"
+                        |}""".stripMargin
+    case AzureRM => s"""provider "azurerm" {
+                            |  features {}
+                            |}""".stripMargin
+    case _ => throw new Exception("Unsupported provider type")
+  }
 }
 
 case class ResourceGroup(name: String) extends TerraformResource {
@@ -21,22 +43,32 @@ case class ResourceGroup(name: String) extends TerraformResource {
 }
 
 // VM resources
-case class VM(name: String, image: String, size: String) extends TerraformResource {
-  override def toHCL: String =
-    s"""resource "azurerm_virtual_machine" "$name" {
-       |  name                  = "$name"
-       |  location              = "West Europe"
-       |  resource_group_name   = azurerm_resource_group.example.name
-       |  vm_size               = "$size"
-       |  delete_os_disk_on_termination = true
-       |
-       |  storage_image_reference {
-       |    publisher = "${image.split(":")(0)}"
-       |    offer     = "${image.split(":")(1)}"
-       |    sku       = "${image.split(":")(2)}"
-       |    version   = "latest"
-       |  }
-       |}""".stripMargin
+case class VM(name: String, image: String, size: String, provider: Provider) extends TerraformResource {
+  override def toHCL: String = provider.providerType match {
+    case AWS => s"""resource "aws_instance" "$name" {
+                     |  ami           = "$image"
+                     |  instance_type = "$size"
+                     |
+                     |  tags = {
+                     |    Name = "$name"
+                     |  }
+                     |}""".stripMargin
+    case AzureRM => s"""resource "azurerm_virtual_machine" "$name" {
+                         |  name                  = "$name"
+                         |  location              = "${provider.region}"
+                         |  resource_group_name   = azurerm_resource_group.example.name
+                         |  vm_size               = "$size"
+                         |  delete_os_disk_on_termination = true
+                         |
+                         |  storage_image_reference {
+                         |    publisher = "${image.split(":")(0)}"
+                         |    offer     = "${image.split(":")(1)}"
+                         |    sku       = "${image.split(":")(2)}"
+                         |    version   = "latest"
+                         |  }
+                         |}""".stripMargin
+    case _ => throw new Exception("Unsupported provider type")
+  }
 }
 
 // Credentials
@@ -50,11 +82,19 @@ case class Credentials(provider: Provider, accessKey: String, secretKey: String)
 }
 
 // Network resources
-case class Network(name: String, cidrBlock: String) extends TerraformResource {
-  override def toHCL: String =
-    s"""resource "aws_vpc" "$name" {
-       |  cidr_block = "$cidrBlock"
-       |}""".stripMargin
+case class Network(name: String, cidrBlock: CIDRBlock, provider: Provider) extends TerraformResource {
+  override def toHCL: String = provider.providerType match {
+    case AWS => s"""resource "aws_vpc" "$name" {
+                     |  cidr_block = "$cidrBlock"
+                     |}""".stripMargin
+    case AzureRM => s"""resource "azurerm_virtual_network" "$name" {
+                         |  name                = "$name"
+                         |  location            = "${provider.region}"
+                         |  resource_group_name = azurerm_resource_group.example.name
+                         |  address_space       = ["$cidrBlock"]
+                         |}""".stripMargin
+    case _ => throw new Exception("Unsupported provider type")
+  }
 }
 
 case class Subnet(name: String, network: Network, cidrBlock: String) extends TerraformResource {
