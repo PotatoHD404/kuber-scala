@@ -1,29 +1,66 @@
-import akka.actor.ActorSystem
-import skuber.api.client.KubernetesClient
-import skuber.custom.KuberInfo
-import skuber.{EventList, NamespaceList, NodeList, PodList, cordonNode, drainNodes, k8sInit, toList}
 
-import concurrent.duration.DurationInt
-import skuber.json.format.*
-import terraform.*
-import terraform.Resources._
+sealed trait ProviderType { def name: String }
+case object AWSObj extends ProviderType { val name = "aws" }
+case object AzureRMObj extends ProviderType { val name = "azurerm" }
 
-import scala.concurrent.{Await, ExecutionContextExecutor, Future}
+// define AWS type
+type AWS = AWSObj.type
+
+// define AzureRM type
+type AzureRM = AzureRMObj.type
+
+abstract class TerraformResource[T <: ProviderType] {
+  def toHCL: String
+}
+
+trait InfrastructureResource[T <: ProviderType] extends TerraformResource[T]
+
+trait TerraformResourceHCL[A <: InfrastructureResource[_]] {
+  def toHCL(resource: A): String
+}
+
+implicit object AWSNetworkHCL extends TerraformResourceHCL[Network[AWS]] {
+  def toHCL(network: Network[AWS]): String = {
+    s"""resource "aws_vpc" "${network.name}" {
+       |  cidr_block = "${network.cidr}"
+       |}""".stripMargin
+  }
+}
+
+implicit object AzureRMNetworkHCL extends TerraformResourceHCL[Network[AzureRM]] {
+  def toHCL(network: Network[AzureRM]): String = {
+    s"""resource "azurerm_virtual_network" "${network.name}" {
+       |  name                = "${network.name}"
+       |  location            = "East US"
+       |  resource_group_name = azurerm_resource_group.example.name
+       |  address_space       = ["${network.cidr}"]
+       |}""".stripMargin
+  }
+}
+
+case class Network[T <: ProviderType](name: String, cidr: String)(implicit hcl: TerraformResourceHCL[Network[T]]) extends InfrastructureResource[T] {
+  def toHCL: String = hcl.toHCL(this)
+}
+
+
+case class TerraformConfig[T <: ProviderType](resources: List[InfrastructureResource[T]]) {
+  def toHCL: String = {
+//    val allResources = credentials :: backend.toList ++ resources
+    resources.map(_.toHCL).mkString("\n\n")
+  }
+}
+
+
+
 
 @main
 def main(): Unit = {
-  val provider = Provider("aws", Region("us-west-2"), AWS)
-  val network = Network("example", CIDRBlock("10.0.0.0/16"), provider)
-  val portRange = PortRange(22, 22)
-  val credentials = Credentials(provider, "ACCESS_KEY", "SECRET_KEY")
-  val subnet = Subnet("example", network, "10.0.1.0/24")
-  val securityGroup = SecurityGroup("example")
-  val securityRule = SecurityRule("example", securityGroup, "tcp", "0.0.0.0/0", "10.0.0.0/8", "22-22")
-  val s3Bucket = S3Bucket("example")
-  val vm = VM("example", "Canonical:UbuntuServer:18.04-LTS:latest", "Standard_B1s", provider)
-  val scalingGroup = ScalingGroup("example", 1, 3, vm)
+  val awsNetwork = Network[AWS]("my-aws-network", "10.0.0.0/16")
+  val azureNetwork = Network[AzureRM]("my-azurerm-network", "10.0.0.0/16")
 
-  val resources: List[TerraformResource] = List(provider, credentials, network, subnet, securityGroup, securityRule, s3Bucket, vm, scalingGroup)
-  val hclCode = TerraformGenerator.generateHCL(resources)
-  println(hclCode)
+  val awsConfig = TerraformConfig[AWS](List(awsNetwork))
+  val azureConfig = TerraformConfig[AzureRM](List(azureNetwork))
+
+  println(awsConfig.toHCL)
+  println(azureConfig.toHCL)
 }
