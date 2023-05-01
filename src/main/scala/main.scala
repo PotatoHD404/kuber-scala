@@ -399,15 +399,6 @@ def main(): Unit = {
       } yield updatedNode
     }
 
-    def setDeleteFirstLabel(pod: Pod): Future[Pod] = {
-      val updatedPod = pod.copy(
-        metadata = pod.metadata.copy(
-          labels = pod.metadata.labels + ("delete-first" -> "true")
-        )
-      )
-
-      k8s.update(updatedPod)
-    }
 
     //    def deletePod(pod: Pod): Future[Unit] = {
     //
@@ -422,34 +413,6 @@ def main(): Unit = {
     //      }
     //    }
 
-    def updatePodDisruptionBudgetIfNeeded(pdb: PodDisruptionBudget): Future[PodDisruptionBudget] = {
-      val expectedSpec = PodDisruptionBudget.Spec(
-        minAvailable = Some(1),
-        selector = Some("delete-first" is "true")
-      )
-
-      if (pdb.spec.contains(expectedSpec)) {
-        Future.successful(pdb)
-      } else {
-        val updatedPdb = pdb.copy(spec = Some(expectedSpec))
-        k8s.update(updatedPdb)
-      }
-    }
-
-    def getOrCreatePodDisruptionBudget(namespace: String, name: String): Future[PodDisruptionBudget] = {
-      val pdb = PodDisruptionBudget(
-        metadata = ObjectMeta(name = name, namespace = namespace),
-        spec = Some(PodDisruptionBudget.Spec(
-          minAvailable = Some(1),
-          selector = Some("delete-first" is "true")
-        ))
-      )
-
-      k8s.getOption[PodDisruptionBudget](name, Some(namespace)).flatMap {
-        case Some(existingPdb) => updatePodDisruptionBudgetIfNeeded(existingPdb)
-        case None => k8s.create(pdb)
-      }
-    }
 
     //    def scaleDeployments(namespace: String, factor: Int): Future[Unit] = {
     //      for {
@@ -465,12 +428,13 @@ def main(): Unit = {
     //    }
 
 
-    def waitUntilAllPodsRunning(statefulSets: List[StatefulSet],
-                                deployments: List[Deployment],
-                                replicaSets: List[ReplicaSet],
-                                pollInterval: FiniteDuration = 5.seconds,
-                                timeout: FiniteDuration = 5.minutes
-                               ): Future[Unit] = {
+    def waitUntilAllPodsVerified(statefulSets: List[StatefulSet],
+                                 deployments: List[Deployment],
+                                 replicaSets: List[ReplicaSet],
+                                 pollInterval: FiniteDuration = 1.seconds,
+                                 timeout: FiniteDuration = 5.minutes,
+                                 checkRunning: Boolean = true
+                                ): Future[Unit] = {
       val deadline = timeout.fromNow
       println(s"Waiting for pods to be running. Deployments: ${deployments.length}, StatefulSets: ${statefulSets.length}, ReplicaSets: ${replicaSets.length}")
       //      println(deployments)
@@ -494,9 +458,13 @@ def main(): Unit = {
           println(s"Relevant pod count: ${relevantPods.length}, Expected pod count: $expectedPodCount")
 
           val correctPodCount = relevantPods.length == expectedPodCount
-          val allPodsRunning = relevantPods.forall(_.status.exists(_.phase.contains(Phase.Running)))
+          if (!checkRunning) {
+            correctPodCount
+          } else {
+            val allPodsRunning = relevantPods.forall(_.status.exists(_.phase.contains(Phase.Running)))
 
-          correctPodCount && allPodsRunning
+            correctPodCount && allPodsRunning
+          }
         }
       }
 
@@ -572,6 +540,35 @@ def main(): Unit = {
     }
 
 
+    def deletePod(pod: Pod, gracePeriod: Int): Future[Unit] = {
+      val deleteOptions = DeleteOptions(gracePeriodSeconds = Some(gracePeriod))
+      k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace))
+    }
+
+
+    def processResources[T <: ObjectResource](resources: List[T], nodePods: List[Pod], deploymentNames: List[Option[String]] = List.empty): (List[T], List[Int]) = {
+      resources.flatMap { resource =>
+        if (deploymentNames.nonEmpty && deploymentNames.contains(resource.metadata.labels.get("app"))) {
+          None
+        } else {
+          val increment = nodePods.count(pod => pod.metadata.labels.get("app") == resource.metadata.labels.get("app"))
+          println(s"Found $increment pods for ${resource.kind} ${resource.metadata.name}")
+          increment match {
+            case 0 => None
+            case _ => Some((increaseReplicas(resource, increment), increment))
+          }
+        }
+      }.unzip
+    }
+
+    def extractAutoscalersData[T <: ObjectResource](resources: List[T]): List[(String, String)] = {
+      resources
+        .map(resource => (resource.metadata.namespace, resource.metadata.labels.get("app")))
+        .filter(_._2.isDefined)
+        .map(t => (t._1, t._2.get))
+    }
+
+
     def drainNode(nodeName: String, gracePeriod: Int): Future[Unit] = {
       for {
 
@@ -581,51 +578,16 @@ def main(): Unit = {
         (statefulSets, deployments, replicaSets) <- getResources
 
 
-        (updatedDeployments, deploymentsIncrements) = deployments.items.flatMap { d =>
-          println(nodePods.length)
-          nodePods.foreach(p => println(p.metadata.labels))
-          println(d.metadata.labels)
-          val increment = nodePods.count(pod => pod.metadata.labels.get("app") == d.metadata.labels.get("app"))
-          println(s"Found $increment pods for deployment ${d.metadata.name}")
-          increment match {
-            case 0 => None
-            case _ => Some((increaseReplicas[Deployment](d, increment), increment))
-          }
-        }.unzip
+        (updatedDeployments, deploymentsIncrements) = processResources(deployments.items, nodePods)
         deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
-        (updatedReplicaSets, replicaSetsIncrements) = replicaSets.items.flatMap { rs =>
-          if (deploymentNames.contains(rs.metadata.labels.get("app"))) {
-            None
-          } else {
-            val increment = nodePods.count(pod => pod.metadata.labels.get("app") == rs.metadata.labels.get("app"))
-            println(s"Found $increment pods for replicaset ${rs.metadata.name}")
-            increment match {
-              case 0 => None
-              case _ => Some((increaseReplicas[ReplicaSet](rs, increment), increment))
-            }
-          }
-        }.unzip
-
-        (updatedStatefulSets, statefulSetsIncrements) = statefulSets.items.flatMap { ss =>
-          if (deploymentNames.contains(ss.metadata.labels.get("app"))) {
-            None
-          } else {
-            val increment = nodePods.count(pod => pod.metadata.labels.get("app") == ss.metadata.labels.get("app"))
-            println(s"Found $increment pods for statefulset ${ss.metadata.name}")
-            increment match {
-              case 0 => None
-              case _ => Some((increaseReplicas[StatefulSet](ss, increment), increment))
-            }
-          }
-        }.unzip
+        (updatedReplicaSets, replicaSetsIncrements) = processResources(replicaSets.items, nodePods, deploymentNames)
+        (updatedStatefulSets, statefulSetsIncrements) = processResources(statefulSets.items, nodePods, deploymentNames)
         //noinspection DuplicatedCode
-        autoscalersData: List[(String, String)]
-          = (updatedReplicaSets.map(rs => (rs.metadata.namespace,
-          rs.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
-          updatedDeployments.map(d => (d.metadata.namespace,
-            d.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get)) ++
-          updatedStatefulSets.map(ss => (ss.metadata.namespace,
-            ss.metadata.labels.get("app"))).filter(_._2.isDefined).map(t => (t._1, t._2.get))).distinct
+        autoscalersData: List[(String, String)] = (
+          extractAutoscalersData(updatedReplicaSets) ++
+            extractAutoscalersData(updatedDeployments) ++
+            extractAutoscalersData(updatedStatefulSets)
+          ).distinct
 
         disabledAutoscalers <- Future.sequence(autoscalersData.map(t => disableAutoscaler(t._1, t._2)))
 
@@ -639,38 +601,65 @@ def main(): Unit = {
         updatedReplicaSets <- Future.sequence(updatedReplicaSets.map(k8s.update(_)))
 
 
-        _ <- waitUntilAllPodsRunning(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
+        _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
         //        getOrCreatePodDisruptionBudget(namespace, s"${deploymentNameOpt.get}-pdb")
 
-        _ <- Future.sequence(nodePods.map(setDeleteFirstLabel))
-
-        _ <- Future.sequence(nodePods.map(pod => (pod.namespace, pod.metadata.labels.get("app"))).
-          filter(_._2.isDefined).map(el => (el._1, el._2.get)).distinct.
-          map(t => getOrCreatePodDisruptionBudget(t._1, s"${t._2}-pdb")))
+        _ <- Future.sequence(nodePods.map(pod => deletePod(pod, gracePeriod)))
 
         //        val namespace = pod.namespace
         //
         //        //      val managedByDeployment = pod.metadata.labels.get("app.kubernetes.io/managed-by").contains("deployment-controller")
         //        val deploymentNameOpt = pod.metadata.labels.get("app")
-
+        //        _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, false)
+        _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, checkRunning = false)
         //noinspection DuplicatedCode
         updatedStatefulSets <- Future.sequence(updatedStatefulSets.zip(statefulSetsIncrements).map { (resource, increment) =>
           k8s.get[StatefulSet](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
             k8s.update(increaseReplicas(fetchedResource, -increment))
           }
         })
+        //noinspection DuplicatedCode
         updatedDeployments <- Future.sequence(updatedDeployments.zip(deploymentsIncrements).map { (resource, increment) =>
           k8s.get[Deployment](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
             k8s.update(increaseReplicas(fetchedResource, -increment))
           }
         })
+        //noinspection DuplicatedCode
         updatedReplicaSets <- Future.sequence(updatedReplicaSets.zip(replicaSetsIncrements).map { (resource, increment) =>
           k8s.get[ReplicaSet](resource.name, Some(resource.namespace)).flatMap { fetchedResource =>
             k8s.update(increaseReplicas(fetchedResource, -increment))
+
           }
         })
+        //noinspection DuplicatedCode
+        //        updatedStatefulSets <- Future.sequence(updatedStatefulSets.zip(statefulSetsIncrements).map { (resource, increment) =>
+        //          val updatedResource = increaseReplicas(resource, -increment)
+        //          for {
+        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map { scale =>
+        //              k8s.updateScale(resource.name, scale.copy(spec = Scale.Spec(updatedResource.spec.get.replicas.map(_ - increment))), Some(resource.namespace))
+        //            }
+        //          } yield updatedResource
+        //        })
+        //        //noinspection DuplicatedCode
+        //        updatedDeployments <- Future.sequence(updatedDeployments.zip(deploymentsIncrements).map { (resource, increment) =>
+        //          val updatedResource = increaseReplicas(resource, -increment)
+        //          for {
+        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map { scale =>
+        //              k8s.updateScale(resource.name, scale.copy(spec = Scale.Spec(updatedResource.spec.get.replicas.map(_ - increment))), Some(resource.namespace))
+        //            }
+        //          } yield updatedResource
+        //        })
+        //        //noinspection DuplicatedCode
+        //        updatedReplicaSets <- Future.sequence(updatedReplicaSets.zip(replicaSetsIncrements).map { (resource, increment) =>
+        //          val updatedResource = increaseReplicas(resource, - increment)
+        //          for {
+        //            _ <- k8s.getScale(resource.name, Some(resource.namespace)).map {scale =>
+        //            k8s.updateScale (resource.name, scale.copy (spec = Scale.Spec (updatedResource.spec.get.replicas.map (_ - increment))), Some (resource.namespace))
+        //          }
+        //          } yield updatedResource
+        //        })
 
-        _ <- waitUntilAllPodsRunning(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
+        _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
 
         _ <- Future.sequence(filteredDisabledAutoscalers.map(enableAutoscaler))
       }
