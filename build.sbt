@@ -4,6 +4,11 @@ libraryDependencies += "io.github.hagay3" %% "skuber" % "3.0.6"
 
 libraryDependencies += "io.spray" %%  "spray-json" % "1.3.6"
 
+libraryDependencies ++= Seq(
+  "io.circe" %% "circe-core" % "0.14.5",
+  "io.circe" %% "circe-generic" % "0.14.5",
+  "io.circe" %% "circe-parser" % "0.14.5"
+)
 
 //libraryDependencies ++= Seq(
 //  "org.antlr" % "antlr4" % "4.12.0",

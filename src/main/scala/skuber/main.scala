@@ -1,3 +1,5 @@
+package skuber
+
 import akka.actor.ActorSystem
 import skuber.api.client.KubernetesClient
 import skuber.custom.KuberInfo
@@ -8,7 +10,7 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
 @main
-def skuberMain(): Unit = {
+def main(): Unit = {
 
   implicit val system: ActorSystem = ActorSystem()
   implicit val dispatcher: ExecutionContextExecutor = system.dispatcher
