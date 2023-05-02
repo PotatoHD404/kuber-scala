@@ -2,7 +2,7 @@ package terraform
 
 import io.circe.parser.decode
 import io.circe.generic.auto.*
-import terraform.parser.{TerraformProviderConfig, generateCaseClass}
+import terraform.parser.{TerraformProviderConfig, generateCaseClasses}
 @main
 def main(): Unit = {
   val jsonStr =
@@ -34,14 +34,16 @@ def main(): Unit = {
         }
       }
     }
-  }
+  },
+  "ResourcesMap": {},
+  "Schema": {}
 }"""
 
   val terraformProviderConfig = decode[TerraformProviderConfig](jsonStr)
 
   terraformProviderConfig match {
     case Right(config) =>
-      val caseClassDef = generateCaseClass(config)
+      val caseClassDef = generateCaseClasses(config)
       println(s"Generated case class definition:\n$caseClassDef")
     case Left(error) => println(s"Error parsing JSON: $error")
   }

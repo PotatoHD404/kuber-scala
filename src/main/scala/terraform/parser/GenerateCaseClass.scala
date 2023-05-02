@@ -2,29 +2,86 @@ package terraform.parser
 
 import scala.collection.mutable
 
-def generateCaseClass(providerConfig: TerraformProviderConfig): String = {
-  val caseClassBuilder = new mutable.StringBuilder()
+case class TypeContext(knownTypes: Map[String, String])
 
-  providerConfig.DataSourcesMap.foreach { case (dataSourceName, dataSource) =>
-    val className = dataSourceName.split("_").map(_.capitalize).mkString("")
-    caseClassBuilder.append(s"case class $className(")
+def toCamelCase(str: String): String = {
+  "_([a-z\\d])".r.replaceAllIn(str, _.group(1).toUpperCase())
+}
 
-    val fieldDefinitions = dataSource.Schema.map { case (fieldName, field) =>
-      val fieldTypeName = field.Type match {
-        case 0 => "Boolean"
-        case 1 => "Double"
-        case 2 => "Int"
-        case 3 => "String"
-        case 4 => "Long"
-        case _ => throw new IllegalArgumentException(s"Unsupported type code: ${field.Type}")
-      }
-      val fieldType = if (field.Optional) s"Option[$fieldTypeName]" else fieldTypeName
-      s"$fieldName: $fieldType"
-    }
-
-    caseClassBuilder.append(fieldDefinitions.mkString(", "))
-    caseClassBuilder.append(")\n")
+def generateType(field: SchemaField): String = {
+  val fieldType = field.Type
+  val t = fieldType match {
+    case 1 => "Boolean"
+    case 2 => "Int"
+    case 3 => "Double"
+    case 4 => "String"
+    case 5 => "List[T]"
+    case 6 => "Map[String, T]"
+    case 7 => "Set[T]"
+    case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
+  if (field.Optional) {
+    s"Option[$t]"
+  } else {
+    t
+  }
+}
 
-  caseClassBuilder.toString()
+def generateSchemaField(field: (String, SchemaField), context: TypeContext): String = {
+  val (fieldName, schemaField) = field
+  val fieldType = generateType(schemaField)
+
+  schemaField.Elem match {
+    case Some(Left(resource)) =>
+      val resourceClass = generateResourceClass((fieldName, resource), context)
+      fieldType.replace("T", resourceClass)
+    case Some(Right(schemaFieldElem)) =>
+      val nestedField = generateSchemaField((fieldName, schemaFieldElem), context)
+      fieldType.replace("T", nestedField)
+    case None => fieldType
+  }
+}
+
+def generateResourceClass(resource: (String, Resource), context: TypeContext): String = {
+  val (name, resourceData) = resource
+  val className = toCamelCase(name).capitalize
+
+  if (context.knownTypes.contains(className)) {
+    context.knownTypes(className)
+  } else {
+    val newContext = TypeContext(context.knownTypes + (className -> className))
+    val fields = resourceData.Schema.map { field =>
+      val fieldName = toCamelCase(field._1)
+      val fieldType = generateSchemaField((field._1, field._2), newContext)
+      s"  $fieldName: $fieldType"
+    }.mkString(",\n")
+
+    s"case class $className(\n$fields\n)"
+  }
+}
+
+def generateCaseClasses(providerConfig: TerraformProviderConfig): String = {
+  val context = TypeContext(Map.empty)
+
+
+  val resources = providerConfig.ResourcesMap.map { resource =>
+    generateResourceClass(resource, context)
+  }.mkString("\n\n")
+
+  val dataSources = providerConfig.DataSourcesMap.map { dataSource =>
+    generateResourceClass(dataSource, context)
+  }.mkString("\n\n")
+
+  val schema = providerConfig.Schema.map(field => generateSchemaField(field, context)).mkString("\n\n")
+
+  s"""
+     |// Resources
+     |$resources
+     |
+     |// Data Sources
+     |$dataSources
+     |
+     |// Provider Schema
+     |$schema
+  """.stripMargin
 }
