@@ -1,6 +1,6 @@
 package terraform
 
-import terraform.Resources.TerraformResource
+import terraform.resources.TerraformResource
 
 
 object TerraformGenerator {

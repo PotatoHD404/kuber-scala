@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 trait BackendResource extends TerraformResource
 case class Backend() extends BackendResource {

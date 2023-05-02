@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 // Scaling resources
 case class ScalingGroup(name: String, minSize: Int, maxSize: Int, vm: VM) extends InfrastructureResource {

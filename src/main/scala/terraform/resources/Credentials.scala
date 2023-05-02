@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 trait CredentialsResource extends TerraformResource
 // Credentials

@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 // S3 resources
 case class S3Bucket(name: String) extends InfrastructureResource {

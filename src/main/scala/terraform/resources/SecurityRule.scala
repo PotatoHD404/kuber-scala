@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 case class SecurityRule(name: String, securityGroup: SecurityGroup, protocol: String, source: String, destination: String, portRange: String) extends InfrastructureResource {
   override def toHCL: String =

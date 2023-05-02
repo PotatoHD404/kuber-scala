@@ -1,6 +1,6 @@
 package terraform
 
-import terraform.Resources.{BackendResource, CredentialsResource, InfrastructureResource}
+import terraform.resources.{BackendResource, CredentialsResource, InfrastructureResource}
 
 
 case class TerraformConfig(credentials: CredentialsResource, backend: Option[BackendResource], resources: List[InfrastructureResource]) {

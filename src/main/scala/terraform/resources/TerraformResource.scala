@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 abstract class TerraformResource {
   def toHCL: String

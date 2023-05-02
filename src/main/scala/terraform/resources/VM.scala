@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 import terraform.{AWS, AzureRM}
 

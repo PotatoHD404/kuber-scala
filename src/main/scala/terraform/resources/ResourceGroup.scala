@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 case class ResourceGroup(name: String) extends InfrastructureResource {
   override def toHCL: String =

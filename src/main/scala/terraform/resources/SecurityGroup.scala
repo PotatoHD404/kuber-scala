@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 // Security resources
 case class SecurityGroup(name: String) extends InfrastructureResource {

@@ -1,6 +1,6 @@
 package terraform
 
-import terraform.Resources.TerraformResource
+import terraform.resources.TerraformResource
 
 sealed trait ProviderType { def name: String }
 case object AWS extends ProviderType { val name = "aws" }

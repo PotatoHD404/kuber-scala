@@ -1,4 +1,4 @@
-package terraform.Resources
+package terraform.resources
 
 case class Subnet(name: String, network: Network, cidrBlock: String) extends InfrastructureResource {
   override def toHCL: String =
