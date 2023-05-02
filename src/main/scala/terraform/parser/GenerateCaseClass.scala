@@ -2,7 +2,7 @@ package terraform.parser
 
 import scala.collection.mutable
 
-case class TypeContext(knownTypes: Map[String, String])
+case class TypeContext(knownTypes: Map[String, String], generatedClasses: mutable.Set[String] = mutable.Set())
 
 def toCamelCase(str: String): String = {
   "_([a-z\\d])".r.replaceAllIn(str, _.group(1).toUpperCase())
@@ -27,6 +27,7 @@ def generateType(field: SchemaField): String = {
   }
 }
 
+
 def generateSchemaField(field: (String, SchemaField), context: TypeContext): String = {
   val (fieldName, schemaField) = field
   val fieldType = generateType(schemaField)
@@ -46,42 +47,41 @@ def generateResourceClass(resource: (String, Resource), context: TypeContext): S
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
 
-  if (context.knownTypes.contains(className)) {
+  if (context.knownTypes.exists(_._1.contains(className + "("))) {
     context.knownTypes(className)
   } else {
-    val newContext = TypeContext(context.knownTypes + (className -> className))
+    val newContext = TypeContext(context.knownTypes + (className -> className), context.generatedClasses)
     val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
       val fieldName = toCamelCase(field._1)
       val fieldType = generateSchemaField((field._1, field._2), newContext)
       s"  $fieldName: $fieldType"
     }.mkString(",\n")
 
-    s"case class $className(\n$fields\n)"
+    val classDef = s"case class $className(\n$fields\n)"
+    newContext.generatedClasses += classDef
+    className
   }
 }
 
 def generateCaseClasses(providerConfig: TerraformProviderConfig): String = {
   val context = TypeContext(Map.empty)
 
-
-  val resources = providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).map { resource =>
+  providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).foreach { resource =>
     generateResourceClass(resource, context)
-  }.mkString("\n\n")
+  }
 
-  val dataSources = providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).map { dataSource =>
+  providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
     generateResourceClass(dataSource, context)
-  }.mkString("\n\n")
+  }
 
-  val schema = providerConfig.Schema.toSeq.sortWith(_._1 < _._1).map(field => generateSchemaField(field, context)).mkString("\n\n")
+  generateResourceClass(("Provider", Resource("", "", providerConfig.Schema)), context)
+
+  val generatedClasses = context.generatedClasses.toSeq.sorted.mkString("\n\n")
 
   s"""
-     |// Resources
-     |$resources
-     |
-     |// Data Sources
-     |$dataSources
-     |
-     |// Provider Schema
-     |$schema
-  """.stripMargin
+     |// Generated Case Classes
+     |$generatedClasses
+  """.stripMargin.replace("type:", "`type`:").
+    replace("package:", "`package`:").
+    replace("class:", "`class`:")
 }
