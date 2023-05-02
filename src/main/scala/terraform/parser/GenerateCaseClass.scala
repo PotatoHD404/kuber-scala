@@ -20,7 +20,7 @@ def generateType(field: SchemaField): String = {
     case 7 => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
-  if (field.Optional) {
+  if (!field.Required && field.RequiredWith.isEmpty) {
     s"Option[$t]"
   } else {
     t
@@ -50,7 +50,7 @@ def generateResourceClass(resource: (String, Resource), context: TypeContext): S
     context.knownTypes(className)
   } else {
     val newContext = TypeContext(context.knownTypes + (className -> className))
-    val fields = resourceData.Schema.map { field =>
+    val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
       val fieldName = toCamelCase(field._1)
       val fieldType = generateSchemaField((field._1, field._2), newContext)
       s"  $fieldName: $fieldType"
@@ -64,15 +64,15 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig): String = {
   val context = TypeContext(Map.empty)
 
 
-  val resources = providerConfig.ResourcesMap.map { resource =>
+  val resources = providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).map { resource =>
     generateResourceClass(resource, context)
   }.mkString("\n\n")
 
-  val dataSources = providerConfig.DataSourcesMap.map { dataSource =>
+  val dataSources = providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).map { dataSource =>
     generateResourceClass(dataSource, context)
   }.mkString("\n\n")
 
-  val schema = providerConfig.Schema.map(field => generateSchemaField(field, context)).mkString("\n\n")
+  val schema = providerConfig.Schema.toSeq.sortWith(_._1 < _._1).map(field => generateSchemaField(field, context)).mkString("\n\n")
 
   s"""
      |// Resources
