@@ -12,7 +12,7 @@ case class SchemaField(
                         Deprecated: String,
                         Description: String,
                         DiffSuppressOnRefresh: Boolean,
-                        Elem: Option[Either[Resource, SchemaField]],
+                        Elem: Option[Either[TerraformResource, SchemaField]],
                         ExactlyOneOf: List[String],
                         ForceNew: Boolean,
                         InputDefault: String,
@@ -27,12 +27,12 @@ case class SchemaField(
 
 object SchemaField {
   // Add these implicit decoders for the `Either` type in the `Elem` field
-  implicit val decodeResourceOrSchemaField: Decoder[Either[Resource, SchemaField]] =
-    Decoder[Resource].map(Left(_)).or(Decoder[SchemaField].map(Right(_)))
+  implicit val decodeResourceOrSchemaField: Decoder[Either[TerraformResource, SchemaField]] =
+    Decoder[TerraformResource].map(Left(_)).or(Decoder[SchemaField].map(Right(_)))
 
-  implicit val encodeResourceOrSchemaField: Encoder[Either[Resource, SchemaField]] =
+  implicit val encodeResourceOrSchemaField: Encoder[Either[TerraformResource, SchemaField]] =
     Encoder.instance {
-      case Left(resource) => Encoder[Resource].apply(resource)
+      case Left(resource) => Encoder[TerraformResource].apply(resource)
       case Right(schemaField) => Encoder[SchemaField].apply(schemaField)
     }
 

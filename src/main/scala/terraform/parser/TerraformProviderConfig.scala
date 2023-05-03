@@ -4,8 +4,8 @@ import io.circe.Codec
 import io.circe.generic.semiauto.deriveCodec
 
 case class TerraformProviderConfig(
-                                    DataSourcesMap: Map[String, Resource],
-                                    ResourcesMap: Map[String, Resource],
+                                    DataSourcesMap: Map[String, TerraformResource],
+                                    ResourcesMap: Map[String, TerraformResource],
                                     Schema: Map[String, SchemaField])
 
 object TerraformProviderConfig {

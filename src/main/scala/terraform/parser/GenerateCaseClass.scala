@@ -43,7 +43,7 @@ def generateSchemaField(field: (String, SchemaField), context: TypeContext): Str
   }
 }
 
-def generateResourceClass(resource: (String, Resource), context: TypeContext): String = {
+def generateResourceClass(resource: (String, TerraformResource), context: TypeContext): String = {
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
 
@@ -74,7 +74,7 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig): String = {
     generateResourceClass(dataSource, context)
   }
 
-  generateResourceClass(("Provider", Resource("", "", providerConfig.Schema)), context)
+  generateResourceClass(("Provider", TerraformResource("", "", providerConfig.Schema)), context)
 
   val generatedClasses = context.generatedClasses.toSeq.sorted.mkString("\n\n")
 

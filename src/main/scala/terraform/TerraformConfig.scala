@@ -2,8 +2,8 @@ package terraform
 
 import terraform.resources.{BackendResource, CredentialsResource, InfrastructureResource}
 
-
-case class TerraformConfig(credentials: CredentialsResource, backend: Option[BackendResource], resources: List[InfrastructureResource]) {
+// replace <: with :
+case class TerraformConfig[T1 <: CredentialsResource](credentials: T1, backend: Option[BackendResource], resources: List[InfrastructureResource]) {
   def toHCL: String = {
     val allResources = credentials :: backend.toList ++ resources
     allResources.map(_.toHCL).mkString("\n\n")

@@ -23,6 +23,10 @@ trait TerraformResourceHCL[A <: InfrastructureResource[_]] {
   def toHCL(resource: A): String
 }
 
+object TerraformResourceHCL {
+  def apply[T <: InfrastructureResource[_]] (implicit hcl: TerraformResourceHCL[T]): TerraformResourceHCL[T] = hcl
+}
+
 implicit object AWSNetworkHCL extends TerraformResourceHCL[Network[AWS]] {
   def toHCL(network: Network[AWS]): String = {
     s"""resource "aws_vpc" "${network.name}" {
