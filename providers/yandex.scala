@@ -1,11 +1,6 @@
 // Generated Case Classes
 case class Access(
                    dataLens: Option[Boolean],
-                   dataTransfer: Option[Boolean]
-                 )
-
-case class Access(
-                   dataLens: Option[Boolean],
                    dataTransfer: Option[Boolean],
                    metrika: Option[Boolean],
                    serverless: Option[Boolean],
@@ -13,22 +8,33 @@ case class Access(
                    yandexQuery: Option[Boolean]
                  )
 
-case class Access(
-                   dataLens: Option[Boolean],
-                   dataTransfer: Option[Boolean],
-                   serverless: Option[Boolean],
-                   webSql: Option[Boolean]
-                 )
+case class Access1(
+                    dataLens: Option[Boolean],
+                    dataTransfer: Option[Boolean],
+                    webSql: Option[Boolean]
+                  )
 
-case class Access(
-                   dataLens: Option[Boolean],
-                   dataTransfer: Option[Boolean],
-                   webSql: Option[Boolean]
-                 )
+case class Access2(
+                    dataTransfer: Option[Boolean]
+                  )
 
-case class Access(
-                   dataTransfer: Option[Boolean]
-                 )
+case class Access3(
+                    dataLens: Option[Boolean],
+                    dataTransfer: Option[Boolean]
+                  )
+
+case class Access4(
+                    dataLens: Option[Boolean],
+                    dataTransfer: Option[Boolean],
+                    webSql: Option[Boolean]
+                  )
+
+case class Access5(
+                    dataLens: Option[Boolean],
+                    dataTransfer: Option[Boolean],
+                    serverless: Option[Boolean],
+                    webSql: Option[Boolean]
+                  )
 
 case class Address(
                     externalIpv4Address: Option[List[ExternalIpv4Address]],
@@ -37,24 +43,16 @@ case class Address(
                   )
 
 case class AllocationPolicy(
-                             location: Option[List[Location]]
-                           )
-
-case class AllocationPolicy(
-                             location: Option[Set[Location]]
-                           )
-
-case class AllocationPolicy(
                              location: Set[Location]
                            )
 
-case class AllocationPolicy(
-                             zones: Option[Set[Option[String]]]
-                           )
+case class AllocationPolicy1(
+                              zones: Set[Option[String]]
+                            )
 
-case class AllocationPolicy(
-                             zones: Set[Option[String]]
-                           )
+case class AllocationPolicy2(
+                              location: Option[List[Location2]]
+                            )
 
 case class AltNames(
                      fromName: Option[String],
@@ -63,26 +61,27 @@ case class AltNames(
 
 case class AndPrincipals(
                           any: Option[Boolean],
-                          header: Option[List[Header]],
+                          header: Option[List[Header1]],
                           remoteIp: Option[String]
                         )
 
-case class AndPrincipals(
-                          any: Option[Boolean],
-                          headers: Option[List[Headers]],
-                          remoteIp: Option[String]
-                        )
+case class AndPrincipals1(
+                           any: Option[Boolean],
+                           header: Option[List[Header2]],
+                           remoteIp: Option[String]
+                         )
+
+case class AndPrincipals2(
+                           any: Option[Boolean],
+                           header: Option[List[Header3]],
+                           remoteIp: Option[String]
+                         )
 
 case class AnonymousAccessFlags(
                                  configRead: Option[Boolean],
                                  list: Option[Boolean],
                                  read: Option[Boolean]
                                )
-
-case class ApplicationBalancerState(
-                                     statusMessage: Option[String],
-                                     targetGroupId: Option[String]
-                                   )
 
 case class ApplicationLoadBalancer(
                                     maxOpeningTrafficDuration: Option[Int],
@@ -99,13 +98,8 @@ case class ApplyServerSideEncryptionByDefault(
                                              )
 
 case class AttachedTargetGroup(
-                                healthcheck: List[Healthcheck],
+                                healthcheck: List[Healthcheck1],
                                 targetGroupId: String
-                              )
-
-case class AttachedTargetGroup(
-                                healthcheck: Option[List[Healthcheck]],
-                                targetGroupId: Option[String]
                               )
 
 case class AuditLog(
@@ -124,28 +118,11 @@ case class AutoScale(
                       warmupDuration: Option[Int]
                     )
 
-case class AutoScale(
-                      cpuUtilizationTarget: Option[Double],
-                      customRule: Option[List[CustomRule]],
-                      initialSize: Option[Int],
-                      maxSize: Option[Int],
-                      measurementDuration: Option[Int],
-                      minZoneSize: Option[Int],
-                      stabilizationDuration: Option[Int],
-                      warmupDuration: Option[Int]
-                    )
-
-case class AutoScale(
-                      initial: Int,
-                      max: Int,
-                      min: Int
-                    )
-
-case class AutoScale(
-                      initial: Option[Int],
-                      max: Option[Int],
-                      min: Option[Int]
-                    )
+case class AutoScale1(
+                       initial: Int,
+                       max: Int,
+                       min: Int
+                     )
 
 case class Automatic(
 
@@ -161,25 +138,10 @@ case class AutoscalingConfig(
                               warmupDuration: Option[Int]
                             )
 
-case class AutoscalingConfig(
-                              cpuUtilizationTarget: Option[Double],
-                              decommissionTimeout: Option[Int],
-                              maxHostsCount: Option[Int],
-                              measurementDuration: Option[Int],
-                              preemptible: Option[Boolean],
-                              stabilizationDuration: Option[Int],
-                              warmupDuration: Option[Int]
-                            )
-
 case class BackupWindowStart(
                               hours: Option[Int],
                               minutes: Option[Int]
                             )
-
-case class Binding(
-                    members: Set[Option[String]],
-                    role: String
-                  )
 
 case class BootDisk(
                      autoDelete: Option[Boolean],
@@ -189,17 +151,17 @@ case class BootDisk(
                      mode: Option[String]
                    )
 
-case class BootDisk(
-                     deviceName: Option[String],
-                     diskId: Option[String],
-                     initializeParams: Option[List[InitializeParams]],
-                     mode: Option[String]
-                   )
+case class BootDisk1(
+                      deviceName: Option[String],
+                      diskId: Option[String],
+                      initializeParams: Option[List[InitializeParams1]],
+                      mode: Option[String]
+                    )
 
-case class BootDisk(
-                     size: Option[Int],
-                     `type`: Option[String]
-                   )
+case class BootDisk2(
+                      size: Option[Int],
+                      `type`: Option[String]
+                    )
 
 case class Challenges(
                        createdAt: Option[String],
@@ -230,17 +192,13 @@ case class Cilium(
 
                  )
 
-case class Cilium(
-                   routingMode: Option[String]
-                 )
-
 case class Clickhouse(
                        config: Option[List[Config]],
-                       resources: Option[List[Resources]]
+                       resources: Option[List[Resources3]]
                      )
 
 case class ClickhouseSource(
-                             connection: Option[List[Connection]],
+                             connection: Option[List[Connection1]],
                              excludeTables: Option[List[Option[String]]],
                              includeTables: Option[List[Option[String]]],
                              securityGroups: Option[List[Option[String]]],
@@ -251,7 +209,7 @@ case class ClickhouseTarget(
                              altNames: Option[List[AltNames]],
                              cleanupPolicy: Option[String],
                              clickhouseClusterName: Option[String],
-                             connection: Option[List[Connection]],
+                             connection: Option[List[Connection2]],
                              securityGroups: Option[List[Option[String]]],
                              sharding: Option[List[Sharding]],
                              subnetId: Option[String]
@@ -264,44 +222,21 @@ case class CloudStorage(
                          moveFactor: Option[Double]
                        )
 
-case class CloudStorage(
-                         dataCacheEnabled: Option[Boolean],
-                         dataCacheMaxSize: Option[Int],
-                         enabled: Option[Boolean],
-                         moveFactor: Option[Double]
-                       )
-
-case class ClusterConfig(
-                          access: Option[List[Access]],
-                          backupWindowStart: Option[List[BackupWindowStart]],
-                          featureCompatibilityVersion: Option[String],
-                          mongocfg: Option[List[Mongocfg]],
-                          mongod: Option[List[Mongod]],
-                          mongos: Option[List[Mongos]],
-                          version: Option[String]
-                        )
-
-case class ClusterConfig(
-                          access: Option[List[Access]],
-                          backupWindowStart: Option[List[BackupWindowStart]],
-                          featureCompatibilityVersion: Option[String],
-                          mongocfg: Option[List[Mongocfg]],
-                          mongod: Option[List[Mongod]],
-                          mongos: Option[List[Mongos]],
-                          version: String
-                        )
-
 case class ClusterConfig(
                           hadoop: Option[List[Hadoop]],
                           subclusterSpec: List[SubclusterSpec],
                           versionId: Option[String]
                         )
 
-case class ClusterConfig(
-                          hadoop: Option[List[Hadoop]],
-                          subclusterSpec: Option[List[SubclusterSpec]],
-                          versionId: Option[String]
-                        )
+case class ClusterConfig1(
+                           access: Option[List[Access3]],
+                           backupWindowStart: Option[List[BackupWindowStart]],
+                           featureCompatibilityVersion: Option[String],
+                           mongocfg: Option[List[Mongocfg]],
+                           mongod: Option[List[Mongod]],
+                           mongos: Option[List[Mongos]],
+                           version: String
+                         )
 
 case class Collections(
                         collectionName: Option[String],
@@ -325,70 +260,10 @@ case class Command(
                   )
 
 case class Compression(
-                        method: Option[String],
-                        minPartSize: Option[Int],
-                        minPartSizeRatio: Option[Double]
-                      )
-
-case class Compression(
                         method: String,
                         minPartSize: Int,
                         minPartSizeRatio: Double
                       )
-
-case class Config(
-                   access: Option[List[Access]],
-                   assignPublicIp: Option[Boolean],
-                   brokersCount: Option[Int],
-                   kafka: List[Kafka],
-                   schemaRegistry: Option[Boolean],
-                   unmanagedTopics: Option[Boolean],
-                   version: String,
-                   zones: List[Option[String]],
-                   zookeeper: Option[List[Zookeeper]]
-                 )
-
-case class Config(
-                   access: Option[List[Access]],
-                   autofailover: Option[Boolean],
-                   backupRetainPeriodDays: Option[Int],
-                   backupWindowStart: Option[List[BackupWindowStart]],
-                   performanceDiagnostics: Option[List[PerformanceDiagnostics]],
-                   poolerConfig: Option[List[PoolerConfig]],
-                   postgresqlConfig: Option[Map[String, Option[String]]],
-                   resources: List[Resources],
-                   version: String
-                 )
-
-case class Config(
-                   access: Option[List[Access]],
-                   autofailover: Option[Boolean],
-                   backupRetainPeriodDays: Option[Int],
-                   backupWindowStart: Option[List[BackupWindowStart]],
-                   performanceDiagnostics: Option[List[PerformanceDiagnostics]],
-                   poolerConfig: Option[List[PoolerConfig]],
-                   postgresqlConfig: Option[Map[String, Option[String]]],
-                   resources: Option[List[Resources]],
-                   version: Option[String]
-                 )
-
-case class Config(
-                   adminPassword: Option[String],
-                   dataNode: Option[List[DataNode]],
-                   edition: Option[String],
-                   masterNode: Option[List[MasterNode]],
-                   plugins: Option[Set[Option[String]]],
-                   version: Option[String]
-                 )
-
-case class Config(
-                   adminPassword: String,
-                   dataNode: List[DataNode],
-                   edition: Option[String],
-                   masterNode: Option[List[MasterNode]],
-                   plugins: Option[Set[Option[String]]],
-                   version: Option[String]
-                 )
 
 case class Config(
                    backgroundFetchesPoolSize: Option[Int],
@@ -431,43 +306,91 @@ case class Config(
                    uncompressedCacheSize: Option[Int]
                  )
 
-case class Config(
-                   clientOutputBufferLimitNormal: Option[String],
-                   clientOutputBufferLimitPubsub: Option[String],
-                   databases: Option[Int],
-                   maxmemoryPolicy: Option[String],
-                   notifyKeyspaceEvents: Option[String],
-                   password: String,
-                   slowlogLogSlowerThan: Option[Int],
-                   slowlogMaxLen: Option[Int],
-                   timeout: Option[Int],
-                   version: String
-                 )
+case class Config1(
+                    adminPassword: String,
+                    dataNode: List[DataNode],
+                    edition: Option[String],
+                    masterNode: Option[List[MasterNode]],
+                    plugins: Option[Set[Option[String]]],
+                    version: Option[String]
+                  )
 
-case class Config(
-                   clientOutputBufferLimitNormal: Option[String],
-                   clientOutputBufferLimitPubsub: Option[String],
-                   databases: Option[Int],
-                   maxmemoryPolicy: Option[String],
-                   notifyKeyspaceEvents: Option[String],
-                   slowlogLogSlowerThan: Option[Int],
-                   slowlogMaxLen: Option[Int],
-                   timeout: Option[Int],
-                   version: Option[String]
-                 )
+case class Config2(
+                    access: Option[List[Access2]],
+                    assignPublicIp: Option[Boolean],
+                    brokersCount: Option[Int],
+                    kafka: List[Kafka1],
+                    schemaRegistry: Option[Boolean],
+                    unmanagedTopics: Option[Boolean],
+                    version: String,
+                    zones: List[Option[String]],
+                    zookeeper: Option[List[Zookeeper1]]
+                  )
 
-case class Connection(
-                       connectionOptions: Option[List[ConnectionOptions]]
-                     )
+case class Config3(
+                    access: Option[List[Access5]],
+                    autofailover: Option[Boolean],
+                    backupRetainPeriodDays: Option[Int],
+                    backupWindowStart: Option[List[BackupWindowStart]],
+                    performanceDiagnostics: Option[List[PerformanceDiagnostics]],
+                    poolerConfig: Option[List[PoolerConfig1]],
+                    postgresqlConfig: Option[Map[String, Option[String]]],
+                    resources: List[Resources14],
+                    version: String
+                  )
 
-case class Connection(
-                       mdbClusterId: Option[String],
-                       onPremise: Option[List[OnPremise]]
-                     )
+case class Config4(
+                    clientOutputBufferLimitNormal: Option[String],
+                    clientOutputBufferLimitPubsub: Option[String],
+                    databases: Option[Int],
+                    maxmemoryPolicy: Option[String],
+                    notifyKeyspaceEvents: Option[String],
+                    password: String,
+                    slowlogLogSlowerThan: Option[Int],
+                    slowlogMaxLen: Option[Int],
+                    timeout: Option[Int],
+                    version: String
+                  )
 
 case class Connection(
                        sourceIp: Option[Boolean]
                      )
+
+case class Connection1(
+                        connectionOptions: Option[List[ConnectionOptions]]
+                      )
+
+case class Connection2(
+                        connectionOptions: Option[List[ConnectionOptions]]
+                      )
+
+case class Connection3(
+                        connectionOptions: Option[List[ConnectionOptions1]]
+                      )
+
+case class Connection4(
+                        connectionOptions: Option[List[ConnectionOptions2]]
+                      )
+
+case class Connection5(
+                        mdbClusterId: Option[String],
+                        onPremise: Option[List[OnPremise3]]
+                      )
+
+case class Connection6(
+                        mdbClusterId: Option[String],
+                        onPremise: Option[List[OnPremise4]]
+                      )
+
+case class Connection7(
+                        mdbClusterId: Option[String],
+                        onPremise: Option[List[OnPremise5]]
+                      )
+
+case class Connection8(
+                        mdbClusterId: Option[String],
+                        onPremise: Option[List[OnPremise6]]
+                      )
 
 case class ConnectionLimits(
                              maxConnectionsPerHour: Option[Int],
@@ -477,20 +400,28 @@ case class ConnectionLimits(
                            )
 
 case class ConnectionOptions(
-                              authSource: Option[String],
-                              mdbClusterId: Option[String],
-                              onPremise: Option[List[OnPremise]],
-                              password: Option[List[Password]],
-                              user: Option[String]
-                            )
-
-case class ConnectionOptions(
                               database: Option[String],
                               mdbClusterId: Option[String],
                               onPremise: Option[List[OnPremise]],
                               password: Option[List[Password]],
                               user: Option[String]
                             )
+
+case class ConnectionOptions1(
+                               authSource: Option[String],
+                               mdbClusterId: Option[String],
+                               onPremise: Option[List[OnPremise1]],
+                               password: Option[List[Password]],
+                               user: Option[String]
+                             )
+
+case class ConnectionOptions2(
+                               authSource: Option[String],
+                               mdbClusterId: Option[String],
+                               onPremise: Option[List[OnPremise2]],
+                               password: Option[List[Password]],
+                               user: Option[String]
+                             )
 
 case class Connectivity(
                          networkId: String
@@ -502,20 +433,6 @@ case class ConnectorConfigMirrormaker(
                                        targetCluster: List[TargetCluster],
                                        topics: String
                                      )
-
-case class ConnectorConfigMirrormaker(
-                                       replicationFactor: Option[Int],
-                                       sourceCluster: Option[List[SourceCluster]],
-                                       targetCluster: Option[List[TargetCluster]],
-                                       topics: Option[String]
-                                     )
-
-case class ConnectorConfigS3Sink(
-                                  fileCompressionType: Option[String],
-                                  fileMaxRecords: Option[Int],
-                                  s3Connection: Option[List[S3Connection]],
-                                  topics: Option[String]
-                                )
 
 case class ConnectorConfigS3Sink(
                                   fileCompressionType: String,
@@ -530,14 +447,6 @@ case class Consumer(
                      startingMessageTimestampMs: Option[Int],
                      supportedCodecs: Option[List[Option[String]]]
                    )
-
-case class Container(
-                      id: Option[String],
-                      path: Option[String],
-                      retryAttempts: Option[String],
-                      retryInterval: Option[String],
-                      serviceAccountId: Option[String]
-                    )
 
 case class Container(
                       id: String,
@@ -556,11 +465,6 @@ case class Content(
                   )
 
 case class Cookie(
-                   name: Option[String],
-                   ttl: Option[String]
-                 )
-
-case class Cookie(
                    name: String,
                    ttl: Option[String]
                  )
@@ -572,16 +476,6 @@ case class CorsRule(
                      exposeHeaders: Option[List[Option[String]]],
                      maxAgeSeconds: Option[Int]
                    )
-
-case class CurrentVersion(
-                           createdAt: Option[String],
-                           description: Option[String],
-                           destroyAt: Option[String],
-                           id: Option[String],
-                           payloadEntryKeys: Option[List[Option[String]]],
-                           secretId: Option[String],
-                           status: Option[String]
-                         )
 
 case class Custom(
                    defaultValues: Option[List[Option[String]]],
@@ -598,16 +492,6 @@ case class CustomDomains(
 case class CustomRule(
                        folderId: Option[String],
                        labels: Option[Map[String, Option[String]]],
-                       metricName: Option[String],
-                       metricType: Option[String],
-                       ruleType: Option[String],
-                       service: Option[String],
-                       target: Option[Double]
-                     )
-
-case class CustomRule(
-                       folderId: Option[String],
-                       labels: Option[Map[String, Option[String]]],
                        metricName: String,
                        metricType: String,
                        ruleType: String,
@@ -616,35 +500,21 @@ case class CustomRule(
                      )
 
 case class DataNode(
-                     resources: List[Resources]
-                   )
-
-case class DataNode(
-                     resources: Option[List[Resources]]
-                   )
-
-case class Database(
-                     extension: Option[Set[Extension]],
-                     lcCollate: Option[String],
-                     lcType: Option[String],
-                     name: String,
-                     owner: String,
-                     templateDb: Option[String]
-                   )
-
-case class Database(
-                     name: Option[String]
+                     resources: List[Resources6]
                    )
 
 case class Database(
                      name: String
                    )
 
-case class DefaultHandler(
-                           certificateIds: Option[Set[Option[String]]],
-                           httpHandler: Option[List[HttpHandler]],
-                           streamHandler: Option[List[StreamHandler]]
-                         )
+case class Database1(
+                      extension: Option[Set[Extension]],
+                      lcCollate: Option[String],
+                      lcType: Option[String],
+                      name: String,
+                      owner: String,
+                      templateDb: Option[String]
+                    )
 
 case class DefaultHandler(
                            certificateIds: Set[Option[String]],
@@ -667,24 +537,10 @@ case class DeployPolicy(
                          strategy: Option[String]
                        )
 
-case class DeployPolicy(
-                         maxCreating: Option[Int],
-                         maxDeleting: Option[Int],
-                         maxExpansion: Option[Int],
-                         maxUnavailable: Option[Int],
-                         startupDuration: Option[Int],
-                         strategy: Option[String]
-                       )
-
-case class DeployPolicy(
-                         maxExpansion: Int,
-                         maxUnavailable: Int
-                       )
-
-case class DeployPolicy(
-                         maxExpansion: Option[Int],
-                         maxUnavailable: Option[Int]
-                       )
+case class DeployPolicy1(
+                          maxExpansion: Int,
+                          maxUnavailable: Int
+                        )
 
 case class DhcpOptions(
                         domainName: Option[String],
@@ -713,21 +569,9 @@ case class DiskPlacementPolicy(
                               )
 
 case class Dlq(
-                queueId: Option[String],
-                serviceAccountId: Option[String]
-              )
-
-case class Dlq(
                 queueId: String,
                 serviceAccountId: String
               )
-
-case class DnsRecord(
-                      dnsZoneId: Option[String],
-                      fqdn: Option[String],
-                      ptr: Option[Boolean],
-                      ttl: Option[Int]
-                    )
 
 case class DnsRecord(
                       dnsZoneId: Option[String],
@@ -743,20 +587,6 @@ case class Downsampling(
                          gridInterval: Option[Int],
                          maxPoints: Option[Int]
                        )
-
-case class Egress(
-                   description: Option[String],
-                   fromPort: Option[Int],
-                   id: Option[String],
-                   labels: Option[Map[String, Option[String]]],
-                   port: Option[Int],
-                   predefinedTarget: Option[String],
-                   protocol: Option[String],
-                   securityGroupId: Option[String],
-                   toPort: Option[Int],
-                   v4CidrBlocks: Option[List[Option[String]]],
-                   v6CidrBlocks: Option[List[Option[String]]]
-                 )
 
 case class Egress(
                    description: Option[String],
@@ -781,19 +611,9 @@ case class Endpoint(
                      ports: List[Option[Int]]
                    )
 
-case class Endpoint(
-                     address: Option[List[Address]],
-                     ports: Option[List[Option[Int]]]
-                   )
-
 case class Entries(
                     command: Option[List[Command]],
                     key: String,
-                    textValue: Option[String]
-                  )
-
-case class Entries(
-                    key: Option[String],
                     textValue: Option[String]
                   )
 
@@ -819,14 +639,6 @@ case class ExternalAddressSpec(
                               )
 
 case class ExternalCluster(
-                            bootstrapServers: Option[String],
-                            saslMechanism: Option[String],
-                            saslPassword: Option[String],
-                            saslUsername: Option[String],
-                            securityProtocol: Option[String]
-                          )
-
-case class ExternalCluster(
                             bootstrapServers: String,
                             saslMechanism: Option[String],
                             saslPassword: Option[String],
@@ -838,12 +650,12 @@ case class ExternalIpv4Address(
                                 address: Option[String]
                               )
 
-case class ExternalIpv4Address(
-                                address: Option[String],
-                                ddosProtectionProvider: Option[String],
-                                outgoingSmtpCapability: Option[String],
-                                zoneId: Option[String]
-                              )
+case class ExternalIpv4Address1(
+                                 address: Option[String],
+                                 ddosProtectionProvider: Option[String],
+                                 outgoingSmtpCapability: Option[String],
+                                 zoneId: Option[String]
+                               )
 
 case class ExternalIpv6Address(
                                 address: Option[String]
@@ -851,22 +663,9 @@ case class ExternalIpv6Address(
 
 case class ExternalS3(
                        accessKeyId: Option[String],
-                       endpoint: Option[String],
-                       region: Option[String],
-                       secretAccessKey: Option[String]
-                     )
-
-case class ExternalS3(
-                       accessKeyId: Option[String],
                        endpoint: String,
                        region: Option[String],
                        secretAccessKey: Option[String]
-                     )
-
-case class Filesystem(
-                       deviceName: Option[String],
-                       filesystemId: Option[String],
-                       mode: Option[String]
                      )
 
 case class Filesystem(
@@ -879,15 +678,9 @@ case class FixedScale(
                        size: Int
                      )
 
-case class FixedScale(
-                       size: Option[Int]
-                     )
-
-case class FormatSchema(
-                         name: Option[String],
-                         `type`: Option[String],
-                         uri: Option[String]
-                       )
+case class FixedScale1(
+                        size: Option[Int]
+                      )
 
 case class FormatSchema(
                          name: String,
@@ -900,14 +693,6 @@ case class Fqmn(
                  prefix: Option[String],
                  regex: Option[String]
                )
-
-case class Function(
-                     id: Option[String],
-                     retryAttempts: Option[String],
-                     retryInterval: Option[String],
-                     serviceAccountId: Option[String],
-                     tag: Option[String]
-                   )
 
 case class Function(
                      id: String,
@@ -932,24 +717,9 @@ case class Grant(
                 )
 
 case class GraphiteRollup(
-                           name: Option[String],
-                           pattern: Option[List[Pattern]]
-                         )
-
-case class GraphiteRollup(
                            name: String,
                            pattern: Option[List[Pattern]]
                          )
-
-case class GrpcBackend(
-                        healthcheck: Option[List[Healthcheck]],
-                        loadBalancingConfig: Option[List[LoadBalancingConfig]],
-                        name: Option[String],
-                        port: Option[Int],
-                        targetGroupIds: Option[List[Option[String]]],
-                        tls: Option[List[Tls]],
-                        weight: Option[Int]
-                      )
 
 case class GrpcBackend(
                         healthcheck: Option[List[Healthcheck]],
@@ -977,14 +747,6 @@ case class GrpcRoute(
 
 case class GrpcRouteAction(
                             autoHostRewrite: Option[Boolean],
-                            backendGroupId: Option[String],
-                            hostRewrite: Option[String],
-                            idleTimeout: Option[String],
-                            maxTimeout: Option[String]
-                          )
-
-case class GrpcRouteAction(
-                            autoHostRewrite: Option[Boolean],
                             backendGroupId: String,
                             hostRewrite: Option[String],
                             idleTimeout: Option[String],
@@ -1008,37 +770,32 @@ case class Handler(
                     rewriteRequestId: Option[Boolean]
                   )
 
-case class Handler(
-                    backendGroupId: Option[String]
-                  )
+case class Handler1(
+                     backendGroupId: Option[String]
+                   )
 
-case class Handler(
-                    certificateIds: Option[Set[Option[String]]],
-                    httpHandler: Option[List[HttpHandler]],
-                    streamHandler: Option[List[StreamHandler]]
-                  )
-
-case class Handler(
-                    certificateIds: Set[Option[String]],
-                    httpHandler: Option[List[HttpHandler]],
-                    streamHandler: Option[List[StreamHandler]]
-                  )
-
-case class Header(
-                   headerName: Option[String]
-                 )
+case class Handler2(
+                     certificateIds: Set[Option[String]],
+                     httpHandler: Option[List[HttpHandler]],
+                     streamHandler: Option[List[StreamHandler]]
+                   )
 
 case class Header(
                    headerName: String
                  )
 
-case class Header(
-                   name: String,
-                   value: Option[List[Value]]
-                 )
+case class Header1(
+                    name: String,
+                    value: Option[List[Value]]
+                  )
 
-case class Headers(
-                    name: Option[String],
+case class Header2(
+                    name: String,
+                    value: Option[List[Value]]
+                  )
+
+case class Header3(
+                    name: String,
                     value: Option[List[Value]]
                   )
 
@@ -1056,18 +813,6 @@ case class Healthcheck(
                         healthcheckPort: Option[Int],
                         healthyThreshold: Option[Int],
                         httpHealthcheck: Option[List[HttpHealthcheck]],
-                        interval: Option[String],
-                        intervalJitterPercent: Option[Double],
-                        streamHealthcheck: Option[List[StreamHealthcheck]],
-                        timeout: Option[String],
-                        unhealthyThreshold: Option[Int]
-                      )
-
-case class Healthcheck(
-                        grpcHealthcheck: Option[List[GrpcHealthcheck]],
-                        healthcheckPort: Option[Int],
-                        healthyThreshold: Option[Int],
-                        httpHealthcheck: Option[List[HttpHealthcheck]],
                         interval: String,
                         intervalJitterPercent: Option[Double],
                         streamHealthcheck: Option[List[StreamHealthcheck]],
@@ -1075,25 +820,15 @@ case class Healthcheck(
                         unhealthyThreshold: Option[Int]
                       )
 
-case class Healthcheck(
-                        healthyThreshold: Option[Int],
-                        httpOptions: Option[List[HttpOptions]],
-                        interval: Option[Int],
-                        name: Option[String],
-                        tcpOptions: Option[List[TcpOptions]],
-                        timeout: Option[Int],
-                        unhealthyThreshold: Option[Int]
-                      )
-
-case class Healthcheck(
-                        healthyThreshold: Option[Int],
-                        httpOptions: Option[List[HttpOptions]],
-                        interval: Option[Int],
-                        name: String,
-                        tcpOptions: Option[List[TcpOptions]],
-                        timeout: Option[Int],
-                        unhealthyThreshold: Option[Int]
-                      )
+case class Healthcheck1(
+                         healthyThreshold: Option[Int],
+                         httpOptions: Option[List[HttpOptions1]],
+                         interval: Option[Int],
+                         name: String,
+                         tcpOptions: Option[List[TcpOptions]],
+                         timeout: Option[Int],
+                         unhealthyThreshold: Option[Int]
+                       )
 
 case class HeatmapSettings(
                             greenValue: Option[String],
@@ -1104,95 +839,6 @@ case class HeatmapSettings(
 
 case class Host(
                  assignPublicIp: Option[Boolean],
-                 backupPriority: Option[Int],
-                 fqdn: Option[String],
-                 name: Option[String],
-                 priority: Option[Int],
-                 replicationSource: Option[String],
-                 replicationSourceName: Option[String],
-                 subnetId: Option[String],
-                 zone: String
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 backupPriority: Option[Int],
-                 fqdn: Option[String],
-                 priority: Option[Int],
-                 replicationSource: Option[String],
-                 subnetId: Option[String],
-                 zone: Option[String]
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 name: Option[String],
-                 priority: Option[Int],
-                 replicationSource: Option[String],
-                 replicationSourceName: Option[String],
-                 role: Option[String],
-                 subnetId: Option[String],
-                 zone: String
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 name: Option[String],
-                 subnetId: Option[String],
-                 `type`: Option[String],
-                 zone: Option[String]
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 name: String,
-                 subnetId: Option[String],
-                 `type`: String,
-                 zone: String
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 priority: Option[Int],
-                 replicationSource: Option[String],
-                 role: Option[String],
-                 subnetId: Option[String],
-                 zone: Option[String]
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 replicaPriority: Option[Int],
-                 shardName: Option[String],
-                 subnetId: Option[String],
-                 zone: Option[String]
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 replicaPriority: Option[Int],
-                 shardName: Option[String],
-                 subnetId: Option[String],
-                 zone: String
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 shardName: Option[String],
-                 subnetId: Option[String],
-                 `type`: Option[String],
-                 zone: Option[String]
-               )
-
-case class Host(
-                 assignPublicIp: Option[Boolean],
                  fqdn: Option[String],
                  shardName: Option[String],
                  subnetId: Option[String],
@@ -1200,50 +846,74 @@ case class Host(
                  zone: String
                )
 
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 subnetId: Option[String],
-                 zone: Option[String]
-               )
+case class Host1(
+                  assignPublicIp: Option[Boolean],
+                  fqdn: Option[String],
+                  name: String,
+                  subnetId: Option[String],
+                  `type`: String,
+                  zone: String
+                )
 
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 fqdn: Option[String],
-                 subnetId: Option[String],
-                 zone: String
-               )
+case class Host2(
+                  assignPublicIp: Option[Boolean],
+                  health: Option[String],
+                  name: Option[String],
+                  role: Option[String],
+                  subnetId: Option[String],
+                  zoneId: Option[String]
+                )
 
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 health: Option[String],
-                 name: Option[String],
-                 role: Option[String],
-                 shardName: Option[String],
-                 subnetId: Option[String],
-                 `type`: Option[String],
-                 zoneId: Option[String]
-               )
+case class Host3(
+                  assignPublicIp: Option[Boolean],
+                  health: Option[String],
+                  name: Option[String],
+                  role: Option[String],
+                  shardName: Option[String],
+                  subnetId: String,
+                  `type`: Option[String],
+                  zoneId: String
+                )
 
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 health: Option[String],
-                 name: Option[String],
-                 role: Option[String],
-                 shardName: Option[String],
-                 subnetId: String,
-                 `type`: Option[String],
-                 zoneId: String
-               )
+case class Host4(
+                  assignPublicIp: Option[Boolean],
+                  backupPriority: Option[Int],
+                  fqdn: Option[String],
+                  name: Option[String],
+                  priority: Option[Int],
+                  replicationSource: Option[String],
+                  replicationSourceName: Option[String],
+                  subnetId: Option[String],
+                  zone: String
+                )
 
-case class Host(
-                 assignPublicIp: Option[Boolean],
-                 health: Option[String],
-                 name: Option[String],
-                 role: Option[String],
-                 subnetId: Option[String],
-                 zoneId: Option[String]
-               )
+case class Host5(
+                  assignPublicIp: Option[Boolean],
+                  fqdn: Option[String],
+                  name: Option[String],
+                  priority: Option[Int],
+                  replicationSource: Option[String],
+                  replicationSourceName: Option[String],
+                  role: Option[String],
+                  subnetId: Option[String],
+                  zone: String
+                )
+
+case class Host6(
+                  assignPublicIp: Option[Boolean],
+                  fqdn: Option[String],
+                  replicaPriority: Option[Int],
+                  shardName: Option[String],
+                  subnetId: Option[String],
+                  zone: String
+                )
+
+case class Host7(
+                  assignPublicIp: Option[Boolean],
+                  fqdn: Option[String],
+                  subnetId: Option[String],
+                  zone: String
+                )
 
 case class HostAffinityRules(
                               key: String,
@@ -1259,18 +929,6 @@ case class Http(
 case class Http2Options(
                          maxConcurrentStreams: Option[Int]
                        )
-
-case class HttpBackend(
-                        healthcheck: Option[List[Healthcheck]],
-                        http2: Option[Boolean],
-                        loadBalancingConfig: Option[List[LoadBalancingConfig]],
-                        name: Option[String],
-                        port: Option[Int],
-                        storageBucket: Option[String],
-                        targetGroupIds: Option[List[Option[String]]],
-                        tls: Option[List[Tls]],
-                        weight: Option[Int]
-                      )
 
 case class HttpBackend(
                         healthcheck: Option[List[Healthcheck]],
@@ -1294,12 +952,6 @@ case class HttpHandler(
 case class HttpHealthcheck(
                             host: Option[String],
                             http2: Option[Boolean],
-                            path: Option[String]
-                          )
-
-case class HttpHealthcheck(
-                            host: Option[String],
-                            http2: Option[Boolean],
                             path: String
                           )
 
@@ -1309,19 +961,14 @@ case class HttpMatch(
                     )
 
 case class HttpOptions(
-                        path: Option[String],
-                        port: Int
-                      )
-
-case class HttpOptions(
-                        path: Option[String],
-                        port: Option[Int]
-                      )
-
-case class HttpOptions(
                         path: String,
                         port: Int
                       )
+
+case class HttpOptions1(
+                         path: Option[String],
+                         port: Int
+                       )
 
 case class HttpRoute(
                       directResponseAction: Option[List[DirectResponseAction]],
@@ -1329,16 +976,6 @@ case class HttpRoute(
                       httpRouteAction: Option[List[HttpRouteAction]],
                       redirectAction: Option[List[RedirectAction]]
                     )
-
-case class HttpRouteAction(
-                            autoHostRewrite: Option[Boolean],
-                            backendGroupId: Option[String],
-                            hostRewrite: Option[String],
-                            idleTimeout: Option[String],
-                            prefixRewrite: Option[String],
-                            timeout: Option[String],
-                            upgradeTypes: Option[Set[Option[String]]]
-                          )
 
 case class HttpRouteAction(
                             autoHostRewrite: Option[Boolean],
@@ -1359,32 +996,9 @@ case class Image(
                   command: Option[List[Option[String]]],
                   digest: Option[String],
                   environment: Option[Map[String, Option[String]]],
-                  url: Option[String],
-                  workDir: Option[String]
-                )
-
-case class Image(
-                  args: Option[List[Option[String]]],
-                  command: Option[List[Option[String]]],
-                  digest: Option[String],
-                  environment: Option[Map[String, Option[String]]],
                   url: String,
                   workDir: Option[String]
                 )
-
-case class Ingress(
-                    description: Option[String],
-                    fromPort: Option[Int],
-                    id: Option[String],
-                    labels: Option[Map[String, Option[String]]],
-                    port: Option[Int],
-                    predefinedTarget: Option[String],
-                    protocol: Option[String],
-                    securityGroupId: Option[String],
-                    toPort: Option[Int],
-                    v4CidrBlocks: Option[List[Option[String]]],
-                    v6CidrBlocks: Option[List[Option[String]]]
-                  )
 
 case class Ingress(
                     description: Option[String],
@@ -1410,79 +1024,64 @@ case class InitializeParams(
                              `type`: Option[String]
                            )
 
-case class InitializeParams(
-                             description: Option[String],
-                             imageId: Option[String],
-                             size: Option[Int],
-                             snapshotId: Option[String],
-                             `type`: Option[String]
-                           )
+case class InitializeParams1(
+                              description: Option[String],
+                              imageId: Option[String],
+                              size: Option[Int],
+                              snapshotId: Option[String],
+                              `type`: Option[String]
+                            )
+
+case class InitializeParams2(
+                              description: Option[String],
+                              imageId: Option[String],
+                              size: Option[Int],
+                              snapshotId: Option[String],
+                              `type`: Option[String]
+                            )
 
 case class InstanceTemplate(
-                             bootDisk: List[BootDisk],
+                             bootDisk: List[BootDisk1],
                              description: Option[String],
                              hostname: Option[String],
                              labels: Option[Map[String, Option[String]]],
                              metadata: Option[Map[String, Option[String]]],
                              name: Option[String],
-                             networkInterface: List[NetworkInterface],
+                             networkInterface: List[NetworkInterface1],
                              networkSettings: Option[List[NetworkSettings]],
-                             placementPolicy: Option[List[PlacementPolicy]],
+                             placementPolicy: Option[List[PlacementPolicy1]],
                              platformId: Option[String],
                              resources: List[Resources],
                              schedulingPolicy: Option[List[SchedulingPolicy]],
-                             secondaryDisk: Option[List[SecondaryDisk]],
+                             secondaryDisk: Option[List[SecondaryDisk1]],
                              serviceAccountId: Option[String]
                            )
 
-case class InstanceTemplate(
-                             bootDisk: Option[List[BootDisk]],
-                             containerRuntime: Option[List[ContainerRuntime]],
-                             labels: Option[Map[String, Option[String]]],
-                             metadata: Option[Map[String, Option[String]]],
-                             name: Option[String],
-                             nat: Option[Boolean],
-                             networkAccelerationType: Option[String],
-                             networkInterface: Option[List[NetworkInterface]],
-                             placementPolicy: Option[List[PlacementPolicy]],
-                             platformId: Option[String],
-                             resources: Option[List[Resources]],
-                             schedulingPolicy: Option[List[SchedulingPolicy]]
-                           )
-
-case class InstanceTemplate(
-                             bootDisk: Option[List[BootDisk]],
-                             description: Option[String],
-                             hostname: Option[String],
-                             labels: Option[Map[String, Option[String]]],
-                             metadata: Option[Map[String, Option[String]]],
-                             name: Option[String],
-                             networkInterface: Option[List[NetworkInterface]],
-                             networkSettings: Option[List[NetworkSettings]],
-                             placementPolicy: Option[List[PlacementPolicy]],
-                             platformId: Option[String],
-                             resources: Option[List[Resources]],
-                             schedulingPolicy: Option[List[SchedulingPolicy]],
-                             secondaryDisk: Option[List[SecondaryDisk]],
-                             serviceAccountId: Option[String]
-                           )
+case class InstanceTemplate1(
+                              bootDisk: Option[List[BootDisk2]],
+                              containerRuntime: Option[List[ContainerRuntime]],
+                              labels: Option[Map[String, Option[String]]],
+                              metadata: Option[Map[String, Option[String]]],
+                              name: Option[String],
+                              nat: Option[Boolean],
+                              networkAccelerationType: Option[String],
+                              networkInterface: Option[List[NetworkInterface3]],
+                              placementPolicy: Option[List[PlacementPolicy2]],
+                              platformId: Option[String],
+                              resources: Option[List[Resources2]],
+                              schedulingPolicy: Option[List[SchedulingPolicy]]
+                            )
 
 case class Instances(
                       fqdn: Option[String],
                       instanceId: Option[String],
                       name: Option[String],
-                      networkInterface: Option[List[NetworkInterface]],
+                      networkInterface: Option[List[NetworkInterface2]],
                       status: Option[String],
                       statusChangedAt: Option[String],
                       statusMessage: Option[String],
                       zoneId: Option[String]
                     )
-
-case class InternalAddressSpec(
-                                address: Option[String],
-                                ipVersion: Option[String],
-                                subnetId: Option[String]
-                              )
 
 case class InternalAddressSpec(
                                 address: Option[String],
@@ -1497,22 +1096,9 @@ case class InternalIpv4Address(
 
 case class Iot(
                 deviceId: Option[String],
-                registryId: Option[String],
-                topic: Option[String]
-              )
-
-case class Iot(
-                deviceId: Option[String],
                 registryId: String,
                 topic: Option[String]
               )
-
-case class Ipv4DnsRecords(
-                           dnsZoneId: Option[String],
-                           fqdn: Option[String],
-                           ptr: Option[Boolean],
-                           ttl: Option[Int]
-                         )
 
 case class Ipv4DnsRecords(
                            dnsZoneId: Option[String],
@@ -1523,24 +1109,10 @@ case class Ipv4DnsRecords(
 
 case class Ipv6DnsRecord(
                           dnsZoneId: Option[String],
-                          fqdn: Option[String],
-                          ptr: Option[Boolean],
-                          ttl: Option[Int]
-                        )
-
-case class Ipv6DnsRecord(
-                          dnsZoneId: Option[String],
                           fqdn: String,
                           ptr: Option[Boolean],
                           ttl: Option[Int]
                         )
-
-case class Ipv6DnsRecords(
-                           dnsZoneId: Option[String],
-                           fqdn: Option[String],
-                           ptr: Option[Boolean],
-                           ttl: Option[Int]
-                         )
 
 case class Ipv6DnsRecords(
                            dnsZoneId: Option[String],
@@ -1554,16 +1126,16 @@ case class Journal(
                   )
 
 case class Kafka(
-                  kafkaConfig: Option[List[KafkaConfig]],
-                  resources: List[Resources]
-                )
-
-case class Kafka(
                   saslMechanism: Option[String],
                   saslPassword: Option[String],
                   saslUsername: Option[String],
                   securityProtocol: Option[String]
                 )
+
+case class Kafka1(
+                   kafkaConfig: Option[List[KafkaConfig]],
+                   resources: List[Resources10]
+                 )
 
 case class KafkaConfig(
                         autoCreateTopicsEnable: Option[Boolean],
@@ -1589,13 +1161,8 @@ case class KafkaConfig(
                       )
 
 case class KafkaTopic(
-                       name: Option[String],
-                       settings: Option[List[Settings]]
-                     )
-
-case class KafkaTopic(
                        name: String,
-                       settings: Option[List[Settings]]
+                       settings: Option[List[Settings1]]
                      )
 
 case class Kmip(
@@ -1608,14 +1175,6 @@ case class Kmip(
 
 case class KmsProvider(
                         keyId: Option[String]
-                      )
-
-case class LabelValues(
-                        defaultValues: Option[List[Option[String]]],
-                        folderId: Option[String],
-                        labelKey: Option[String],
-                        multiselectable: Option[Boolean],
-                        selectors: Option[String]
                       )
 
 case class LabelValues(
@@ -1649,36 +1208,19 @@ case class LifecycleRule(
 case class Listener(
                      endpoint: Option[List[Endpoint]],
                      http: Option[List[Http]],
-                     name: Option[String],
-                     stream: Option[List[Stream]],
-                     tls: Option[List[Tls]]
-                   )
-
-case class Listener(
-                     endpoint: Option[List[Endpoint]],
-                     http: Option[List[Http]],
                      name: String,
                      stream: Option[List[Stream]],
-                     tls: Option[List[Tls]]
+                     tls: Option[List[Tls1]]
                    )
 
-case class Listener(
-                     externalAddressSpec: Option[Set[ExternalAddressSpec]],
-                     internalAddressSpec: Option[Set[InternalAddressSpec]],
-                     name: Option[String],
-                     port: Option[Int],
-                     protocol: Option[String],
-                     targetPort: Option[Int]
-                   )
-
-case class Listener(
-                     externalAddressSpec: Option[Set[ExternalAddressSpec]],
-                     internalAddressSpec: Option[Set[InternalAddressSpec]],
-                     name: String,
-                     port: Int,
-                     protocol: Option[String],
-                     targetPort: Option[Int]
-                   )
+case class Listener1(
+                      externalAddressSpec: Option[Set[ExternalAddressSpec]],
+                      internalAddressSpec: Option[Set[InternalAddressSpec]],
+                      name: String,
+                      port: Int,
+                      protocol: Option[String],
+                      targetPort: Option[Int]
+                    )
 
 case class LoadBalancer(
                          maxOpeningTrafficDuration: Option[Int],
@@ -1688,11 +1230,6 @@ case class LoadBalancer(
                          targetGroupLabels: Option[Map[String, Option[String]]],
                          targetGroupName: Option[String]
                        )
-
-case class LoadBalancerState(
-                              statusMessage: Option[String],
-                              targetGroupId: Option[String]
-                            )
 
 case class LoadBalancingConfig(
                                 localityAwareRoutingPercent: Option[Int],
@@ -1708,35 +1245,23 @@ case class LocalDisk(
 
 case class Location(
                      disableTraffic: Option[Boolean],
-                     subnetId: Option[String],
-                     zoneId: Option[String]
-                   )
-
-case class Location(
-                     disableTraffic: Option[Boolean],
                      subnetId: String,
                      zoneId: String
                    )
 
-case class Location(
-                     region: Option[List[Region]]
-                   )
+case class Location1(
+                      subnetId: Option[String],
+                      zone: Option[String]
+                    )
 
-case class Location(
-                     region: Option[List[Region]],
-                     zone: Option[List[Zone]]
-                   )
+case class Location2(
+                      subnetId: Option[String],
+                      zone: Option[String]
+                    )
 
-case class Location(
-                     subnetId: Option[String],
-                     zone: Option[String]
-                   )
-
-case class LogGroup(
-                     batchCutoff: Option[String],
-                     batchSize: Option[String],
-                     logGroupIds: Option[Set[Option[String]]]
-                   )
+case class Location3(
+                      region: Option[List[Region]]
+                    )
 
 case class LogGroup(
                      batchCutoff: String,
@@ -1751,15 +1276,6 @@ case class LogOptions(
                      )
 
 case class Logging(
-                    batchCutoff: Option[String],
-                    batchSize: Option[String],
-                    groupId: Option[String],
-                    levels: Option[Set[Option[String]]],
-                    resourceIds: Option[Set[Option[String]]],
-                    resourceTypes: Option[Set[Option[String]]]
-                  )
-
-case class Logging(
                     batchCutoff: String,
                     batchSize: Option[String],
                     groupId: String,
@@ -1768,38 +1284,21 @@ case class Logging(
                     resourceTypes: Set[Option[String]]
                   )
 
-case class Logging(
-                    targetBucket: String,
-                    targetPrefix: Option[String]
-                  )
-
-case class MaintenancePolicy(
-                              autoRepair: Boolean,
-                              autoUpgrade: Boolean,
-                              maintenanceWindow: Option[Set[MaintenanceWindow]]
-                            )
-
-case class MaintenancePolicy(
-                              autoRepair: Option[Boolean],
-                              autoUpgrade: Option[Boolean],
-                              maintenanceWindow: Option[Set[MaintenanceWindow]]
-                            )
+case class Logging1(
+                     targetBucket: String,
+                     targetPrefix: Option[String]
+                   )
 
 case class MaintenancePolicy(
                               autoUpgrade: Boolean,
                               maintenanceWindow: Option[Set[MaintenanceWindow]]
                             )
 
-case class MaintenancePolicy(
-                              autoUpgrade: Option[Boolean],
-                              maintenanceWindow: Option[Set[MaintenanceWindow]]
-                            )
-
-case class MaintenanceWindow(
-                              day: Option[String],
-                              duration: Option[String],
-                              startTime: Option[String]
-                            )
+case class MaintenancePolicy1(
+                               autoRepair: Boolean,
+                               autoUpgrade: Boolean,
+                               maintenanceWindow: Option[Set[MaintenanceWindow]]
+                             )
 
 case class MaintenanceWindow(
                               day: Option[String],
@@ -1807,17 +1306,53 @@ case class MaintenanceWindow(
                               startTime: String
                             )
 
-case class MaintenanceWindow(
-                              day: Option[String],
-                              hour: Option[Int],
-                              `type`: Option[String]
-                            )
+case class MaintenanceWindow1(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
 
-case class MaintenanceWindow(
-                              day: Option[String],
-                              hour: Option[Int],
-                              `type`: String
-                            )
+case class MaintenanceWindow2(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow3(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow4(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow5(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow6(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow7(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
+
+case class MaintenanceWindow8(
+                               day: Option[String],
+                               hour: Option[Int],
+                               `type`: String
+                             )
 
 case class Managed(
                     challengeCount: Option[Int],
@@ -1857,25 +1392,12 @@ case class MasterLogging(
                         )
 
 case class MasterNode(
-                       resources: List[Resources]
-                     )
-
-case class MasterNode(
-                       resources: Option[List[Resources]]
+                       resources: List[Resources7]
                      )
 
 case class MasterSubcluster(
-                             resources: List[Resources]
+                             resources: List[Resources8]
                            )
-
-case class MasterSubcluster(
-                             resources: Option[List[Resources]]
-                           )
-
-case class Members(
-                    id: Option[String],
-                    `type`: Option[String]
-                  )
 
 case class MergeTree(
                       maxBytesToMergeAtMinSpaceInPool: Option[Int],
@@ -1889,14 +1411,6 @@ case class MergeTree(
                       replicatedDeduplicationWindowSeconds: Option[Int],
                       ttlOnlyDropParts: Option[Boolean]
                     )
-
-case class MessageQueue(
-                         batchCutoff: Option[String],
-                         batchSize: Option[String],
-                         queueId: Option[String],
-                         serviceAccountId: Option[String],
-                         visibilityTimeout: Option[String]
-                       )
 
 case class MessageQueue(
                          batchCutoff: String,
@@ -1914,23 +1428,10 @@ case class MetadataOptions(
                           )
 
 case class MlModel(
-                    name: Option[String],
-                    `type`: Option[String],
-                    uri: Option[String]
-                  )
-
-case class MlModel(
                     name: String,
                     `type`: String,
                     uri: String
                   )
-
-case class ModifyRequestHeaders(
-                                 append: Option[String],
-                                 name: Option[String],
-                                 remove: Option[Boolean],
-                                 replace: Option[String]
-                               )
 
 case class ModifyRequestHeaders(
                                  append: Option[String],
@@ -1941,13 +1442,6 @@ case class ModifyRequestHeaders(
 
 case class ModifyResponseHeaders(
                                   append: Option[String],
-                                  name: Option[String],
-                                  remove: Option[Boolean],
-                                  replace: Option[String]
-                                )
-
-case class ModifyResponseHeaders(
-                                  append: Option[String],
                                   name: String,
                                   remove: Option[Boolean],
                                   replace: Option[String]
@@ -1955,7 +1449,7 @@ case class ModifyResponseHeaders(
 
 case class MongoSource(
                         collections: Option[List[Collections]],
-                        connection: Option[List[Connection]],
+                        connection: Option[List[Connection3]],
                         excludedCollections: Option[List[ExcludedCollections]],
                         secondaryPreferredMode: Option[Boolean],
                         securityGroups: Option[List[Option[String]]],
@@ -1964,7 +1458,7 @@ case class MongoSource(
 
 case class MongoTarget(
                         cleanupPolicy: Option[String],
-                        connection: Option[List[Connection]],
+                        connection: Option[List[Connection4]],
                         database: Option[String],
                         securityGroups: Option[List[Option[String]]],
                         subnetId: Option[String]
@@ -1982,7 +1476,7 @@ case class Mongod(
                    operationProfiling: Option[List[OperationProfiling]],
                    security: Option[List[Security]],
                    setParameter: Option[List[SetParameter]],
-                   storage: Option[List[Storage]]
+                   storage: Option[List[Storage1]]
                  )
 
 case class Mongos(
@@ -1990,7 +1484,7 @@ case class Mongos(
                  )
 
 case class MysqlSource(
-                        connection: Option[List[Connection]],
+                        connection: Option[List[Connection5]],
                         database: Option[String],
                         excludeTablesRegex: Option[List[Option[String]]],
                         includeTablesRegex: Option[List[Option[String]]],
@@ -2003,7 +1497,7 @@ case class MysqlSource(
                       )
 
 case class MysqlTarget(
-                        connection: Option[List[Connection]],
+                        connection: Option[List[Connection6]],
                         database: Option[String],
                         password: Option[List[Password]],
                         securityGroups: Option[List[Option[String]]],
@@ -2017,13 +1511,6 @@ case class NameHidingSettings(
                                names: Option[List[Option[String]]],
                                positive: Option[Boolean]
                              )
-
-case class NatDnsRecord(
-                         dnsZoneId: Option[String],
-                         fqdn: Option[String],
-                         ptr: Option[Boolean],
-                         ttl: Option[Int]
-                       )
 
 case class NatDnsRecord(
                          dnsZoneId: Option[String],
@@ -2054,73 +1541,46 @@ case class NetworkInterface(
                              natIpAddress: Option[String],
                              natIpVersion: Option[String],
                              securityGroupIds: Option[Set[Option[String]]],
-                             subnetId: Option[String]
-                           )
-
-case class NetworkInterface(
-                             dnsRecord: Option[List[DnsRecord]],
-                             index: Option[Int],
-                             ipAddress: Option[String],
-                             ipv4: Option[Boolean],
-                             ipv6: Option[Boolean],
-                             ipv6Address: Option[String],
-                             ipv6DnsRecord: Option[List[Ipv6DnsRecord]],
-                             macAddress: Option[String],
-                             nat: Option[Boolean],
-                             natDnsRecord: Option[List[NatDnsRecord]],
-                             natIpAddress: Option[String],
-                             natIpVersion: Option[String],
-                             securityGroupIds: Option[Set[Option[String]]],
                              subnetId: String
                            )
 
-case class NetworkInterface(
-                             dnsRecord: Option[List[DnsRecord]],
-                             ipAddress: Option[String],
-                             ipv4: Option[Boolean],
-                             ipv6: Option[Boolean],
-                             ipv6Address: Option[String],
-                             ipv6DnsRecord: Option[List[Ipv6DnsRecord]],
-                             nat: Option[Boolean],
-                             natDnsRecord: Option[List[NatDnsRecord]],
-                             natIpAddress: Option[String],
-                             networkId: Option[String],
-                             securityGroupIds: Option[Set[Option[String]]],
-                             subnetIds: Option[Set[Option[String]]]
-                           )
+case class NetworkInterface1(
+                              dnsRecord: Option[List[DnsRecord]],
+                              ipAddress: Option[String],
+                              ipv4: Option[Boolean],
+                              ipv6: Option[Boolean],
+                              ipv6Address: Option[String],
+                              ipv6DnsRecord: Option[List[Ipv6DnsRecord]],
+                              nat: Option[Boolean],
+                              natDnsRecord: Option[List[NatDnsRecord]],
+                              natIpAddress: Option[String],
+                              networkId: Option[String],
+                              securityGroupIds: Option[Set[Option[String]]],
+                              subnetIds: Option[Set[Option[String]]]
+                            )
 
-case class NetworkInterface(
-                             index: Option[Int],
-                             ipAddress: Option[String],
-                             ipv4: Option[Boolean],
-                             ipv6: Option[Boolean],
-                             ipv6Address: Option[String],
-                             macAddress: Option[String],
-                             nat: Option[Boolean],
-                             natIpAddress: Option[String],
-                             natIpVersion: Option[String],
-                             subnetId: Option[String]
-                           )
+case class NetworkInterface2(
+                              index: Option[Int],
+                              ipAddress: Option[String],
+                              ipv4: Option[Boolean],
+                              ipv6: Option[Boolean],
+                              ipv6Address: Option[String],
+                              macAddress: Option[String],
+                              nat: Option[Boolean],
+                              natIpAddress: Option[String],
+                              natIpVersion: Option[String],
+                              subnetId: Option[String]
+                            )
 
-case class NetworkInterface(
-                             ipv4: Option[Boolean],
-                             ipv4DnsRecords: Option[List[Ipv4DnsRecords]],
-                             ipv6: Option[Boolean],
-                             ipv6DnsRecords: Option[List[Ipv6DnsRecords]],
-                             nat: Option[Boolean],
-                             securityGroupIds: Option[Set[Option[String]]],
-                             subnetIds: Option[Set[Option[String]]]
-                           )
-
-case class NetworkInterface(
-                             ipv4: Option[Boolean],
-                             ipv4DnsRecords: Option[List[Ipv4DnsRecords]],
-                             ipv6: Option[Boolean],
-                             ipv6DnsRecords: Option[List[Ipv6DnsRecords]],
-                             nat: Option[Boolean],
-                             securityGroupIds: Option[Set[Option[String]]],
-                             subnetIds: Set[Option[String]]
-                           )
+case class NetworkInterface3(
+                              ipv4: Option[Boolean],
+                              ipv4DnsRecords: Option[List[Ipv4DnsRecords]],
+                              ipv6: Option[Boolean],
+                              ipv6DnsRecords: Option[List[Ipv6DnsRecords]],
+                              nat: Option[Boolean],
+                              securityGroupIds: Option[Set[Option[String]]],
+                              subnetIds: Set[Option[String]]
+                            )
 
 case class NetworkSettings(
                             `type`: Option[String]
@@ -2137,17 +1597,8 @@ case class NoncurrentVersionTransition(
 
 case class ObjectLockConfiguration(
                                     objectLockEnabled: Option[String],
-                                    rule: Option[List[Rule]]
+                                    rule: Option[List[Rule1]]
                                   )
-
-case class ObjectStorage(
-                          bucketId: Option[String],
-                          create: Option[Boolean],
-                          delete: Option[Boolean],
-                          prefix: Option[String],
-                          suffix: Option[String],
-                          update: Option[Boolean]
-                        )
 
 case class ObjectStorage(
                           bucketId: String,
@@ -2159,44 +1610,30 @@ case class ObjectStorage(
                         )
 
 case class ObjectTransferSettings(
-                                   cast: Option[String],
-                                   collation: Option[String],
-                                   constraint: Option[String],
-                                   defaultValues: Option[String],
-                                   fkConstraint: Option[String],
-                                   function: Option[String],
-                                   index: Option[String],
-                                   materializedView: Option[String],
-                                   policy: Option[String],
-                                   primaryKey: Option[String],
-                                   rule: Option[String],
-                                   sequence: Option[String],
-                                   sequenceOwnedBy: Option[String],
-                                   table: Option[String],
-                                   trigger: Option[String],
-                                   `type`: Option[String],
-                                   view: Option[String]
-                                 )
-
-case class ObjectTransferSettings(
                                    routine: Option[String],
                                    trigger: Option[String],
                                    view: Option[String]
                                  )
 
-case class OnPremise(
-                      hosts: Option[List[Option[String]]],
-                      port: Option[Int],
-                      replicaSet: Option[String],
-                      tlsMode: Option[List[TlsMode]]
-                    )
-
-case class OnPremise(
-                      hosts: Option[List[Option[String]]],
-                      port: Option[Int],
-                      subnetId: Option[String],
-                      tlsMode: Option[List[TlsMode]]
-                    )
+case class ObjectTransferSettings1(
+                                    cast: Option[String],
+                                    collation: Option[String],
+                                    constraint: Option[String],
+                                    defaultValues: Option[String],
+                                    fkConstraint: Option[String],
+                                    function: Option[String],
+                                    index: Option[String],
+                                    materializedView: Option[String],
+                                    policy: Option[String],
+                                    primaryKey: Option[String],
+                                    rule: Option[String],
+                                    sequence: Option[String],
+                                    sequenceOwnedBy: Option[String],
+                                    table: Option[String],
+                                    trigger: Option[String],
+                                    `type`: Option[String],
+                                    view: Option[String]
+                                  )
 
 case class OnPremise(
                       httpPort: Option[Int],
@@ -2204,6 +1641,48 @@ case class OnPremise(
                       shards: Option[List[Shards]],
                       tlsMode: Option[List[TlsMode]]
                     )
+
+case class OnPremise1(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       replicaSet: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
+
+case class OnPremise2(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       replicaSet: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
+
+case class OnPremise3(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       subnetId: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
+
+case class OnPremise4(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       subnetId: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
+
+case class OnPremise5(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       subnetId: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
+
+case class OnPremise6(
+                       hosts: Option[List[Option[String]]],
+                       port: Option[Int],
+                       subnetId: Option[String],
+                       tlsMode: Option[List[TlsMode]]
+                     )
 
 case class OperationProfiling(
                                mode: Option[String],
@@ -2252,16 +1731,6 @@ case class Parameters(
                        custom: Option[List[Custom]],
                        description: Option[String],
                        hidden: Option[Boolean],
-                       id: Option[String],
-                       labelValues: Option[List[LabelValues]],
-                       text: Option[List[Text]],
-                       title: Option[String]
-                     )
-
-case class Parameters(
-                       custom: Option[List[Custom]],
-                       description: Option[String],
-                       hidden: Option[Boolean],
                        id: String,
                        labelValues: Option[List[LabelValues]],
                        text: Option[List[Text]],
@@ -2284,12 +1753,6 @@ case class Path(
                )
 
 case class Pattern(
-                    function: Option[String],
-                    regexp: Option[String],
-                    retention: Option[List[Retention]]
-                  )
-
-case class Pattern(
                     function: String,
                     regexp: Option[String],
                     retention: Option[List[Retention]]
@@ -2301,59 +1764,47 @@ case class PerformanceDiagnostics(
                                    statementsSamplingInterval: Int
                                  )
 
-case class PerformanceDiagnostics(
-                                   enabled: Option[Boolean],
-                                   sessionsSamplingInterval: Option[Int],
-                                   statementsSamplingInterval: Option[Int]
-                                 )
-
-case class Permission(
-                       databaseName: Option[String]
-                     )
-
-case class Permission(
-                       databaseName: Option[String],
-                       roles: Option[List[Option[String]]]
-                     )
-
-case class Permission(
-                       databaseName: Option[String],
-                       roles: Option[Set[Option[String]]]
-                     )
-
 case class Permission(
                        databaseName: String
                      )
 
-case class Permission(
-                       databaseName: String,
-                       roles: Option[List[Option[String]]]
-                     )
+case class Permission1(
+                        role: String,
+                        topicName: String
+                      )
 
-case class Permission(
-                       databaseName: String,
-                       roles: Option[Set[Option[String]]]
-                     )
+case class Permission2(
+                        databaseName: String,
+                        roles: Option[List[Option[String]]]
+                      )
 
-case class Permission(
-                       role: String,
-                       topicName: String
-                     )
+case class Permission3(
+                        databaseName: String,
+                        roles: Option[List[Option[String]]]
+                      )
+
+case class Permission4(
+                        databaseName: String,
+                        roles: Option[List[Option[String]]]
+                      )
+
+case class Permission5(
+                        databaseName: String,
+                        roles: Option[Set[Option[String]]]
+                      )
 
 case class PlacementPolicy(
                             hostAffinityRules: Option[List[HostAffinityRules]],
                             placementGroupId: Option[String]
                           )
 
-case class PlacementPolicy(
-                            placementGroupId: String
-                          )
+case class PlacementPolicy1(
+                             placementGroupId: String
+                           )
 
-case class Policy(
-                   tag: Option[String],
-                   zoneInstancesLimit: Option[Int],
-                   zoneRequestsLimit: Option[Int]
-                 )
+case class PlacementPolicy2(
+                             placementGroupId: String
+                           )
 
 case class Policy(
                    tag: String,
@@ -2367,10 +1818,10 @@ case class PoolerConfig(
                          poolingMode: Option[String]
                        )
 
-case class PoolerConfig(
-                         poolDiscard: Option[Boolean],
-                         poolingMode: Option[String]
-                       )
+case class PoolerConfig1(
+                          poolDiscard: Option[Boolean],
+                          poolingMode: Option[String]
+                        )
 
 case class Position(
                      h: Option[Int],
@@ -2380,11 +1831,11 @@ case class Position(
                    )
 
 case class PostgresSource(
-                           connection: Option[List[Connection]],
+                           connection: Option[List[Connection7]],
                            database: Option[String],
                            excludeTables: Option[List[Option[String]]],
                            includeTables: Option[List[Option[String]]],
-                           objectTransferSettings: Option[List[ObjectTransferSettings]],
+                           objectTransferSettings: Option[List[ObjectTransferSettings1]],
                            password: Option[List[Password]],
                            securityGroups: Option[List[Option[String]]],
                            serviceSchema: Option[String],
@@ -2393,7 +1844,7 @@ case class PostgresSource(
                          )
 
 case class PostgresTarget(
-                           connection: Option[List[Connection]],
+                           connection: Option[List[Connection8]],
                            database: Option[String],
                            password: Option[List[Password]],
                            securityGroups: Option[List[Option[String]]],
@@ -2404,9 +1855,13 @@ case class Principals(
                        andPrincipals: List[AndPrincipals]
                      )
 
-case class Principals(
-                       andPrincipals: Option[List[AndPrincipals]]
-                     )
+case class Principals1(
+                        andPrincipals: List[AndPrincipals1]
+                      )
+
+case class Principals2(
+                        andPrincipals: List[AndPrincipals2]
+                      )
 
 case class PrivateKeyLockboxSecret(
                                     id: String,
@@ -2435,22 +1890,13 @@ case class Provider(
 
 case class Queries(
                     downsampling: Option[List[Downsampling]],
-                    target: Option[List[Target]]
+                    target: Option[List[Target2]]
                   )
 
 case class Quota(
                   errors: Option[Int],
                   executionTime: Option[Int],
                   intervalDuration: Int,
-                  queries: Option[Int],
-                  readRows: Option[Int],
-                  resultRows: Option[Int]
-                )
-
-case class Quota(
-                  errors: Option[Int],
-                  executionTime: Option[Int],
-                  intervalDuration: Option[Int],
                   queries: Option[Int],
                   readRows: Option[Int],
                   resultRows: Option[Int]
@@ -2467,10 +1913,15 @@ case class Rbac(
                  principals: List[Principals]
                )
 
-case class Rbac(
-                 action: Option[String],
-                 principals: Option[List[Principals]]
-               )
+case class Rbac1(
+                  action: Option[String],
+                  principals: List[Principals1]
+                )
+
+case class Rbac2(
+                  action: Option[String],
+                  principals: List[Principals2]
+                )
 
 case class RedirectAction(
                            removeQuery: Option[Boolean],
@@ -2487,20 +1938,12 @@ case class Redirects(
                     )
 
 case class Region(
-                   id: Option[String]
-                 )
-
-case class Region(
                    id: String
                  )
 
 case class Regional(
-                     location: Option[List[Location]],
+                     location: Option[List[Location1]],
                      region: String
-                   )
-
-case class Regional(
-                     region: Option[String]
                    )
 
 case class Resources(
@@ -2510,30 +1953,102 @@ case class Resources(
                       memory: Double
                     )
 
-case class Resources(
-                      coreFraction: Option[Int],
-                      cores: Option[Int],
-                      gpus: Option[Int],
-                      memory: Option[Double]
-                    )
+case class Resources1(
+                       diskSize: Int,
+                       diskTypeId: Option[String],
+                       resourcePresetId: String
+                     )
 
-case class Resources(
-                      diskSize: Int,
-                      diskTypeId: Option[String],
-                      resourcePresetId: String
-                    )
+case class Resources10(
+                        diskSize: Int,
+                        diskTypeId: String,
+                        resourcePresetId: String
+                      )
 
-case class Resources(
-                      diskSize: Int,
-                      diskTypeId: String,
-                      resourcePresetId: String
-                    )
+case class Resources11(
+                        diskSize: Option[Int],
+                        diskTypeId: Option[String],
+                        resourcePresetId: Option[String]
+                      )
 
-case class Resources(
-                      diskSize: Option[Int],
-                      diskTypeId: Option[String],
-                      resourcePresetId: Option[String]
-                    )
+case class Resources12(
+                        diskSize: Int,
+                        diskTypeId: String,
+                        resourcePresetId: String
+                      )
+
+case class Resources13(
+                        diskSize: Int,
+                        diskTypeId: String,
+                        resourcePresetId: String
+                      )
+
+case class Resources14(
+                        diskSize: Int,
+                        diskTypeId: Option[String],
+                        resourcePresetId: String
+                      )
+
+case class Resources15(
+                        diskSize: Int,
+                        diskTypeId: Option[String],
+                        resourcePresetId: String
+                      )
+
+case class Resources16(
+                        diskSize: Int,
+                        diskTypeId: String,
+                        resourcePresetId: String
+                      )
+
+case class Resources2(
+                       coreFraction: Option[Int],
+                       cores: Option[Int],
+                       gpus: Option[Int],
+                       memory: Option[Double]
+                     )
+
+case class Resources3(
+                       diskSize: Option[Int],
+                       diskTypeId: Option[String],
+                       resourcePresetId: Option[String]
+                     )
+
+case class Resources4(
+                       diskSize: Option[Int],
+                       diskTypeId: Option[String],
+                       resourcePresetId: Option[String]
+                     )
+
+case class Resources5(
+                       diskSize: Option[Int],
+                       diskTypeId: Option[String],
+                       resourcePresetId: Option[String]
+                     )
+
+case class Resources6(
+                       diskSize: Int,
+                       diskTypeId: String,
+                       resourcePresetId: String
+                     )
+
+case class Resources7(
+                       diskSize: Int,
+                       diskTypeId: String,
+                       resourcePresetId: String
+                     )
+
+case class Resources8(
+                       diskSize: Int,
+                       diskTypeId: String,
+                       resourcePresetId: String
+                     )
+
+case class Resources9(
+                       diskSize: Int,
+                       diskTypeId: String,
+                       resourcePresetId: String
+                     )
 
 case class ResourcesMongocfg(
                               diskSize: Int,
@@ -2541,22 +2056,10 @@ case class ResourcesMongocfg(
                               resourcePresetId: String
                             )
 
-case class ResourcesMongocfg(
-                              diskSize: Option[Int],
-                              diskTypeId: Option[String],
-                              resourcePresetId: Option[String]
-                            )
-
 case class ResourcesMongod(
                             diskSize: Int,
                             diskTypeId: String,
                             resourcePresetId: String
-                          )
-
-case class ResourcesMongod(
-                            diskSize: Option[Int],
-                            diskTypeId: Option[String],
-                            resourcePresetId: Option[String]
                           )
 
 case class ResourcesMongoinfra(
@@ -2565,48 +2068,26 @@ case class ResourcesMongoinfra(
                                 resourcePresetId: String
                               )
 
-case class ResourcesMongoinfra(
-                                diskSize: Option[Int],
-                                diskTypeId: Option[String],
-                                resourcePresetId: Option[String]
-                              )
-
 case class ResourcesMongos(
                             diskSize: Int,
                             diskTypeId: String,
                             resourcePresetId: String
                           )
 
-case class ResourcesMongos(
-                            diskSize: Option[Int],
-                            diskTypeId: Option[String],
-                            resourcePresetId: Option[String]
-                          )
-
-case class Restore(
-                    backupId: Option[String],
-                    time: Option[String]
-                  )
-
 case class Restore(
                     backupId: String,
                     time: Option[String]
                   )
 
-case class Restore(
-                    backupId: String,
-                    time: Option[String],
-                    timeInclusive: Option[Boolean]
-                  )
+case class Restore1(
+                     backupId: String,
+                     time: Option[String],
+                     timeInclusive: Option[Boolean]
+                   )
 
 case class Retention(
                       age: Int,
                       precision: Int
-                    )
-
-case class Retention(
-                      age: Option[Int],
-                      precision: Option[Int]
                     )
 
 case class Right(
@@ -2622,20 +2103,20 @@ case class Route(
                   grpcRoute: Option[List[GrpcRoute]],
                   httpRoute: Option[List[HttpRoute]],
                   name: Option[String],
-                  routeOptions: Option[List[RouteOptions]]
+                  routeOptions: Option[List[RouteOptions1]]
                 )
 
 case class RouteOptions(
                          rbac: Option[List[Rbac]]
                        )
 
-case class Rule(
-                 applyServerSideEncryptionByDefault: List[ApplyServerSideEncryptionByDefault]
-               )
+case class RouteOptions1(
+                          rbac: Option[List[Rbac1]]
+                        )
 
-case class Rule(
-                 defaultRetention: List[DefaultRetention]
-               )
+case class RouteOptions2(
+                          rbac: Option[List[Rbac2]]
+                        )
 
 case class Rule(
                  description: Option[String],
@@ -2645,10 +2126,13 @@ case class Rule(
                  untagged: Option[Boolean]
                )
 
-case class S3Connection(
-                         bucketName: Option[String],
-                         externalS3: Option[List[ExternalS3]]
-                       )
+case class Rule1(
+                  defaultRetention: List[DefaultRetention]
+                )
+
+case class Rule2(
+                  applyServerSideEncryptionByDefault: List[ApplyServerSideEncryptionByDefault]
+                )
 
 case class S3Connection(
                          bucketName: String,
@@ -2657,22 +2141,18 @@ case class S3Connection(
 
 case class ScalePolicy(
                         autoScale: Option[List[AutoScale]],
-                        fixedScale: Option[List[FixedScale]]
-                      )
-
-case class ScalePolicy(
-                        autoScale: Option[List[AutoScale]],
                         fixedScale: Option[List[FixedScale]],
                         testAutoScale: Option[List[TestAutoScale]]
                       )
 
-case class ScalePolicy(
-                        fixedScale: List[FixedScale]
-                      )
+case class ScalePolicy1(
+                         autoScale: Option[List[AutoScale1]],
+                         fixedScale: Option[List[FixedScale1]]
+                       )
 
-case class ScalePolicy(
-                        fixedScale: Option[List[FixedScale]]
-                      )
+case class ScalePolicy2(
+                         fixedScale: List[FixedScale]
+                       )
 
 case class SchedulePolicy(
                            expression: Option[String],
@@ -2686,23 +2166,16 @@ case class SchedulingPolicy(
 case class SecondaryDisk(
                           autoDelete: Option[Boolean],
                           deviceName: Option[String],
-                          diskId: Option[String],
-                          mode: Option[String]
-                        )
-
-case class SecondaryDisk(
-                          autoDelete: Option[Boolean],
-                          deviceName: Option[String],
                           diskId: String,
                           mode: Option[String]
                         )
 
-case class SecondaryDisk(
-                          deviceName: Option[String],
-                          diskId: Option[String],
-                          initializeParams: Option[List[InitializeParams]],
-                          mode: Option[String]
-                        )
+case class SecondaryDisk1(
+                           deviceName: Option[String],
+                           diskId: Option[String],
+                           initializeParams: Option[List[InitializeParams2]],
+                           mode: Option[String]
+                         )
 
 case class Secrets(
                     environmentVariable: String,
@@ -2720,20 +2193,12 @@ case class SecuritySettings(
                              encryptedAssertions: Boolean
                            )
 
-case class SecuritySettings(
-                             encryptedAssertions: Option[Boolean]
-                           )
-
 case class SegmentHosts(
                          fqdn: Option[String]
                        )
 
 case class SegmentSubcluster(
-                              resources: List[Resources]
-                            )
-
-case class SegmentSubcluster(
-                              resources: Option[List[Resources]]
+                              resources: List[Resources9]
                             )
 
 case class SelfManaged(
@@ -2744,12 +2209,12 @@ case class SelfManaged(
 
 case class SeriesOverrides(
                             name: Option[String],
-                            settings: Option[List[Settings]],
+                            settings: Option[List[Settings3]],
                             targetIndex: Option[String]
                           )
 
 case class ServerSideEncryptionConfiguration(
-                                              rule: List[Rule]
+                                              rule: List[Rule2]
                                             )
 
 case class ServerlessDatabase(
@@ -2770,120 +2235,6 @@ case class SetParameter(
                        )
 
 case class Settings(
-                     addHttpCorsHeader: Option[Boolean],
-                     allowDdl: Option[Boolean],
-                     allowIntrospectionFunctions: Option[Boolean],
-                     allowSuspiciousLowCardinalityTypes: Option[Boolean],
-                     asyncInsert: Option[Boolean],
-                     asyncInsertBusyTimeout: Option[Int],
-                     asyncInsertMaxDataSize: Option[Int],
-                     asyncInsertStaleTimeout: Option[Int],
-                     asyncInsertThreads: Option[Int],
-                     cancelHttpReadonlyQueriesOnClientClose: Option[Boolean],
-                     compile: Option[Boolean],
-                     compileExpressions: Option[Boolean],
-                     connectTimeout: Option[Int],
-                     connectTimeoutWithFailover: Option[Int],
-                     countDistinctImplementation: Option[String],
-                     distinctOverflowMode: Option[String],
-                     distributedAggregationMemoryEfficient: Option[Boolean],
-                     distributedDdlTaskTimeout: Option[Int],
-                     distributedProductMode: Option[String],
-                     emptyResultForAggregationByEmptySet: Option[Boolean],
-                     enableHttpCompression: Option[Boolean],
-                     fallbackToStaleReplicasForDistributedQueries: Option[Boolean],
-                     flattenNested: Option[Boolean],
-                     forceIndexByDate: Option[Boolean],
-                     forcePrimaryKey: Option[Boolean],
-                     groupByOverflowMode: Option[String],
-                     groupByTwoLevelThreshold: Option[Int],
-                     groupByTwoLevelThresholdBytes: Option[Int],
-                     httpConnectionTimeout: Option[Int],
-                     httpHeadersProgressInterval: Option[Int],
-                     httpReceiveTimeout: Option[Int],
-                     httpSendTimeout: Option[Int],
-                     inputFormatDefaultsForOmittedFields: Option[Boolean],
-                     inputFormatValuesInterpretExpressions: Option[Boolean],
-                     insertNullAsDefault: Option[Boolean],
-                     insertQuorum: Option[Int],
-                     insertQuorumTimeout: Option[Int],
-                     joinOverflowMode: Option[String],
-                     joinUseNulls: Option[Boolean],
-                     joinedSubqueryRequiresAlias: Option[Boolean],
-                     lowCardinalityAllowInNativeFormat: Option[Boolean],
-                     maxAstDepth: Option[Int],
-                     maxAstElements: Option[Int],
-                     maxBlockSize: Option[Int],
-                     maxBytesBeforeExternalGroupBy: Option[Int],
-                     maxBytesBeforeExternalSort: Option[Int],
-                     maxBytesInDistinct: Option[Int],
-                     maxBytesInJoin: Option[Int],
-                     maxBytesInSet: Option[Int],
-                     maxBytesToRead: Option[Int],
-                     maxBytesToSort: Option[Int],
-                     maxBytesToTransfer: Option[Int],
-                     maxColumnsToRead: Option[Int],
-                     maxConcurrentQueriesForUser: Option[Int],
-                     maxExecutionTime: Option[Int],
-                     maxExpandedAstElements: Option[Int],
-                     maxHttpGetRedirects: Option[Int],
-                     maxInsertBlockSize: Option[Int],
-                     maxMemoryUsage: Option[Int],
-                     maxMemoryUsageForUser: Option[Int],
-                     maxNetworkBandwidth: Option[Int],
-                     maxNetworkBandwidthForUser: Option[Int],
-                     maxQuerySize: Option[Int],
-                     maxReplicaDelayForDistributedQueries: Option[Int],
-                     maxResultBytes: Option[Int],
-                     maxResultRows: Option[Int],
-                     maxRowsInDistinct: Option[Int],
-                     maxRowsInJoin: Option[Int],
-                     maxRowsInSet: Option[Int],
-                     maxRowsToGroupBy: Option[Int],
-                     maxRowsToRead: Option[Int],
-                     maxRowsToSort: Option[Int],
-                     maxRowsToTransfer: Option[Int],
-                     maxTemporaryColumns: Option[Int],
-                     maxTemporaryNonConstColumns: Option[Int],
-                     maxThreads: Option[Int],
-                     memoryProfilerSampleProbability: Option[Double],
-                     memoryProfilerStep: Option[Int],
-                     mergeTreeMaxBytesToUseCache: Option[Int],
-                     mergeTreeMaxRowsToUseCache: Option[Int],
-                     mergeTreeMinBytesForConcurrentRead: Option[Int],
-                     mergeTreeMinRowsForConcurrentRead: Option[Int],
-                     minBytesToUseDirectIo: Option[Int],
-                     minCountToCompile: Option[Int],
-                     minCountToCompileExpression: Option[Int],
-                     minExecutionSpeed: Option[Int],
-                     minExecutionSpeedBytes: Option[Int],
-                     minInsertBlockSizeBytes: Option[Int],
-                     minInsertBlockSizeRows: Option[Int],
-                     outputFormatJsonQuote64bitIntegers: Option[Boolean],
-                     outputFormatJsonQuoteDenormals: Option[Boolean],
-                     priority: Option[Int],
-                     quotaMode: Option[String],
-                     readOverflowMode: Option[String],
-                     readonly: Option[Int],
-                     receiveTimeout: Option[Int],
-                     replicationAlterPartitionsSync: Option[Int],
-                     resultOverflowMode: Option[String],
-                     selectSequentialConsistency: Option[Boolean],
-                     sendProgressInHttpHeaders: Option[Boolean],
-                     sendTimeout: Option[Int],
-                     setOverflowMode: Option[String],
-                     skipUnavailableShards: Option[Boolean],
-                     sortOverflowMode: Option[String],
-                     timeoutBeforeCheckingExecutionSpeed: Option[Int],
-                     timeoutOverflowMode: Option[String],
-                     transferOverflowMode: Option[String],
-                     transformNullIn: Option[Boolean],
-                     useUncompressedCache: Option[Boolean],
-                     waitForAsyncInsert: Option[Boolean],
-                     waitForAsyncInsertTimeout: Option[Int]
-                   )
-
-case class Settings(
                      clickhouseSource: Option[List[ClickhouseSource]],
                      clickhouseTarget: Option[List[ClickhouseTarget]],
                      mongoSource: Option[List[MongoSource]],
@@ -2894,39 +2245,141 @@ case class Settings(
                      postgresTarget: Option[List[PostgresTarget]]
                    )
 
-case class Settings(
-                     color: Option[String],
-                     growDown: Option[Boolean],
-                     name: Option[String],
-                     stackName: Option[String],
-                     `type`: Option[String],
-                     yaxisPosition: Option[String]
-                   )
+case class Settings1(
+                      saslMechanism: Option[String],
+                      saslPassword: Option[String],
+                      saslUsername: Option[String],
+                      securityProtocol: Option[String]
+                    )
 
-case class Settings(
-                     saslMechanism: Option[String],
-                     saslPassword: Option[String],
-                     saslUsername: Option[String],
-                     securityProtocol: Option[String]
-                   )
+case class Settings2(
+                      addHttpCorsHeader: Option[Boolean],
+                      allowDdl: Option[Boolean],
+                      allowIntrospectionFunctions: Option[Boolean],
+                      allowSuspiciousLowCardinalityTypes: Option[Boolean],
+                      asyncInsert: Option[Boolean],
+                      asyncInsertBusyTimeout: Option[Int],
+                      asyncInsertMaxDataSize: Option[Int],
+                      asyncInsertStaleTimeout: Option[Int],
+                      asyncInsertThreads: Option[Int],
+                      cancelHttpReadonlyQueriesOnClientClose: Option[Boolean],
+                      compile: Option[Boolean],
+                      compileExpressions: Option[Boolean],
+                      connectTimeout: Option[Int],
+                      connectTimeoutWithFailover: Option[Int],
+                      countDistinctImplementation: Option[String],
+                      distinctOverflowMode: Option[String],
+                      distributedAggregationMemoryEfficient: Option[Boolean],
+                      distributedDdlTaskTimeout: Option[Int],
+                      distributedProductMode: Option[String],
+                      emptyResultForAggregationByEmptySet: Option[Boolean],
+                      enableHttpCompression: Option[Boolean],
+                      fallbackToStaleReplicasForDistributedQueries: Option[Boolean],
+                      flattenNested: Option[Boolean],
+                      forceIndexByDate: Option[Boolean],
+                      forcePrimaryKey: Option[Boolean],
+                      groupByOverflowMode: Option[String],
+                      groupByTwoLevelThreshold: Option[Int],
+                      groupByTwoLevelThresholdBytes: Option[Int],
+                      httpConnectionTimeout: Option[Int],
+                      httpHeadersProgressInterval: Option[Int],
+                      httpReceiveTimeout: Option[Int],
+                      httpSendTimeout: Option[Int],
+                      inputFormatDefaultsForOmittedFields: Option[Boolean],
+                      inputFormatValuesInterpretExpressions: Option[Boolean],
+                      insertNullAsDefault: Option[Boolean],
+                      insertQuorum: Option[Int],
+                      insertQuorumTimeout: Option[Int],
+                      joinOverflowMode: Option[String],
+                      joinUseNulls: Option[Boolean],
+                      joinedSubqueryRequiresAlias: Option[Boolean],
+                      lowCardinalityAllowInNativeFormat: Option[Boolean],
+                      maxAstDepth: Option[Int],
+                      maxAstElements: Option[Int],
+                      maxBlockSize: Option[Int],
+                      maxBytesBeforeExternalGroupBy: Option[Int],
+                      maxBytesBeforeExternalSort: Option[Int],
+                      maxBytesInDistinct: Option[Int],
+                      maxBytesInJoin: Option[Int],
+                      maxBytesInSet: Option[Int],
+                      maxBytesToRead: Option[Int],
+                      maxBytesToSort: Option[Int],
+                      maxBytesToTransfer: Option[Int],
+                      maxColumnsToRead: Option[Int],
+                      maxConcurrentQueriesForUser: Option[Int],
+                      maxExecutionTime: Option[Int],
+                      maxExpandedAstElements: Option[Int],
+                      maxHttpGetRedirects: Option[Int],
+                      maxInsertBlockSize: Option[Int],
+                      maxMemoryUsage: Option[Int],
+                      maxMemoryUsageForUser: Option[Int],
+                      maxNetworkBandwidth: Option[Int],
+                      maxNetworkBandwidthForUser: Option[Int],
+                      maxQuerySize: Option[Int],
+                      maxReplicaDelayForDistributedQueries: Option[Int],
+                      maxResultBytes: Option[Int],
+                      maxResultRows: Option[Int],
+                      maxRowsInDistinct: Option[Int],
+                      maxRowsInJoin: Option[Int],
+                      maxRowsInSet: Option[Int],
+                      maxRowsToGroupBy: Option[Int],
+                      maxRowsToRead: Option[Int],
+                      maxRowsToSort: Option[Int],
+                      maxRowsToTransfer: Option[Int],
+                      maxTemporaryColumns: Option[Int],
+                      maxTemporaryNonConstColumns: Option[Int],
+                      maxThreads: Option[Int],
+                      memoryProfilerSampleProbability: Option[Double],
+                      memoryProfilerStep: Option[Int],
+                      mergeTreeMaxBytesToUseCache: Option[Int],
+                      mergeTreeMaxRowsToUseCache: Option[Int],
+                      mergeTreeMinBytesForConcurrentRead: Option[Int],
+                      mergeTreeMinRowsForConcurrentRead: Option[Int],
+                      minBytesToUseDirectIo: Option[Int],
+                      minCountToCompile: Option[Int],
+                      minCountToCompileExpression: Option[Int],
+                      minExecutionSpeed: Option[Int],
+                      minExecutionSpeedBytes: Option[Int],
+                      minInsertBlockSizeBytes: Option[Int],
+                      minInsertBlockSizeRows: Option[Int],
+                      outputFormatJsonQuote64bitIntegers: Option[Boolean],
+                      outputFormatJsonQuoteDenormals: Option[Boolean],
+                      priority: Option[Int],
+                      quotaMode: Option[String],
+                      readOverflowMode: Option[String],
+                      readonly: Option[Int],
+                      receiveTimeout: Option[Int],
+                      replicationAlterPartitionsSync: Option[Int],
+                      resultOverflowMode: Option[String],
+                      selectSequentialConsistency: Option[Boolean],
+                      sendProgressInHttpHeaders: Option[Boolean],
+                      sendTimeout: Option[Int],
+                      setOverflowMode: Option[String],
+                      skipUnavailableShards: Option[Boolean],
+                      sortOverflowMode: Option[String],
+                      timeoutBeforeCheckingExecutionSpeed: Option[Int],
+                      timeoutOverflowMode: Option[String],
+                      transferOverflowMode: Option[String],
+                      transformNullIn: Option[Boolean],
+                      useUncompressedCache: Option[Boolean],
+                      waitForAsyncInsert: Option[Boolean],
+                      waitForAsyncInsertTimeout: Option[Int]
+                    )
 
-case class Shard(
-                  name: Option[String],
-                  resources: Option[List[Resources]],
-                  weight: Option[Int]
-                )
+case class Settings3(
+                      color: Option[String],
+                      growDown: Option[Boolean],
+                      name: Option[String],
+                      stackName: Option[String],
+                      `type`: Option[String],
+                      yaxisPosition: Option[String]
+                    )
 
 case class Shard(
                   name: String,
-                  resources: Option[List[Resources]],
+                  resources: Option[List[Resources4]],
                   weight: Option[Int]
                 )
-
-case class ShardGroup(
-                       description: Option[String],
-                       name: Option[String],
-                       shardNames: Option[List[Option[String]]]
-                     )
 
 case class ShardGroup(
                        description: Option[String],
@@ -2954,15 +2407,9 @@ case class SnapshotSpec(
                        )
 
 case class SniHandler(
-                       handler: List[Handler],
+                       handler: List[Handler2],
                        name: String,
                        serverNames: Set[Option[String]]
-                     )
-
-case class SniHandler(
-                       handler: Option[List[Handler]],
-                       name: Option[String],
-                       serverNames: Option[Set[Option[String]]]
                      )
 
 case class SourceCluster(
@@ -2988,38 +2435,22 @@ case class StaticRoute(
                       )
 
 case class Storage(
-                    journal: Option[List[Journal]],
                     wiredTiger: Option[List[WiredTiger]]
                   )
 
-case class Storage(
-                    wiredTiger: Option[List[WiredTiger]]
-                  )
+case class Storage1(
+                     journal: Option[List[Journal]],
+                     wiredTiger: Option[List[WiredTiger1]]
+                   )
 
 case class StorageConfig(
                           groupCount: Int,
                           storageTypeId: String
                         )
 
-case class StorageConfig(
-                          groupCount: Option[Int],
-                          storageTypeId: Option[String]
-                        )
-
 case class Stream(
-                   handler: Option[List[Handler]]
+                   handler: Option[List[Handler1]]
                  )
-
-case class StreamBackend(
-                          enableProxyProtocol: Option[Boolean],
-                          healthcheck: Option[List[Healthcheck]],
-                          loadBalancingConfig: Option[List[LoadBalancingConfig]],
-                          name: Option[String],
-                          port: Option[Int],
-                          targetGroupIds: Option[List[Option[String]]],
-                          tls: Option[List[Tls]],
-                          weight: Option[Int]
-                        )
 
 case class StreamBackend(
                           enableProxyProtocol: Option[Boolean],
@@ -3047,43 +2478,27 @@ case class SubclusterSpec(
                            hostsCount: Int,
                            id: Option[String],
                            name: String,
-                           resources: List[Resources],
+                           resources: List[Resources1],
                            role: String,
                            subnetId: String
                          )
-
-case class SubclusterSpec(
-                           assignPublicIp: Option[Boolean],
-                           autoscalingConfig: Option[List[AutoscalingConfig]],
-                           hostsCount: Option[Int],
-                           id: Option[String],
-                           name: Option[String],
-                           resources: Option[List[Resources]],
-                           role: Option[String],
-                           subnetId: Option[String]
-                         )
-
-case class Target(
-                   address: Option[String],
-                   subnetId: Option[String]
-                 )
-
-case class Target(
-                   address: String,
-                   subnetId: String
-                 )
-
-case class Target(
-                   hidden: Option[Boolean],
-                   query: Option[String],
-                   textMode: Option[Boolean]
-                 )
 
 case class Target(
                    ipAddress: String,
                    privateIpv4Address: Option[Boolean],
                    subnetId: Option[String]
                  )
+
+case class Target1(
+                    address: String,
+                    subnetId: String
+                  )
+
+case class Target2(
+                    hidden: Option[Boolean],
+                    query: Option[String],
+                    textMode: Option[Boolean]
+                  )
 
 case class TargetCluster(
                           alias: Option[String],
@@ -3093,10 +2508,6 @@ case class TargetCluster(
 
 case class TcpOptions(
                        port: Int
-                     )
-
-case class TcpOptions(
-                       port: Option[Int]
                      )
 
 case class TestAutoScale(
@@ -3110,40 +2521,20 @@ case class TestAutoScale(
                           warmupDuration: Option[Int]
                         )
 
-case class TestAutoScale(
-                          cpuUtilizationTarget: Option[Double],
-                          customRule: Option[List[CustomRule]],
-                          initialSize: Option[Int],
-                          maxSize: Option[Int],
-                          measurementDuration: Option[Int],
-                          minZoneSize: Option[Int],
-                          stabilizationDuration: Option[Int],
-                          warmupDuration: Option[Int]
-                        )
-
 case class Text(
                  defaultValue: Option[String]
                )
 
-case class Text(
-                 text: Option[String]
-               )
+case class Text1(
+                  text: Option[String]
+                )
 
 case class ThisCluster(
 
                       )
 
 case class Timer(
-                  cronExpression: Option[String]
-                )
-
-case class Timer(
                   cronExpression: String
-                )
-
-case class Title(
-                  size: Option[String],
-                  text: Option[String]
                 )
 
 case class Title(
@@ -3152,32 +2543,19 @@ case class Title(
                 )
 
 case class Tls(
-                defaultHandler: List[DefaultHandler],
-                sniHandler: Option[List[SniHandler]]
-              )
-
-case class Tls(
-                defaultHandler: Option[List[DefaultHandler]],
-                sniHandler: Option[List[SniHandler]]
-              )
-
-case class Tls(
                 sni: Option[String],
                 validationContext: Option[List[ValidationContext]]
               )
+
+case class Tls1(
+                 defaultHandler: List[DefaultHandler],
+                 sniHandler: Option[List[SniHandler]]
+               )
 
 case class TlsMode(
                     disabled: Option[List[Disabled]],
                     enabled: Option[List[Enabled]]
                   )
-
-case class Topic(
-                  clusterId: String,
-                  name: String,
-                  partitions: Int,
-                  replicationFactor: Int,
-                  topicConfig: Option[List[TopicConfig]]
-                )
 
 case class Topic(
                   name: String,
@@ -3213,69 +2591,49 @@ case class Transition(
                      )
 
 case class User(
-                 authenticationPlugin: Option[String],
-                 connectionLimits: Option[List[ConnectionLimits]],
-                 globalPermissions: Option[Set[Option[String]]],
-                 name: Option[String],
-                 password: Option[String],
-                 permission: Option[Set[Permission]]
-               )
-
-case class User(
-                 authenticationPlugin: Option[String],
-                 connectionLimits: Option[List[ConnectionLimits]],
-                 globalPermissions: Option[Set[Option[String]]],
-                 name: String,
-                 password: String,
-                 permission: Option[Set[Permission]]
-               )
-
-case class User(
-                 connLimit: Option[Int],
-                 grants: Option[List[Option[String]]],
-                 login: Option[Boolean],
-                 name: String,
-                 password: String,
-                 permission: Option[Set[Permission]],
-                 settings: Option[Map[String, Option[String]]]
-               )
-
-case class User(
-                 connLimit: Option[Int],
-                 grants: Option[List[Option[String]]],
-                 login: Option[Boolean],
-                 name: String,
-                 permission: Option[Set[Permission]],
-                 settings: Option[Map[String, Option[String]]]
-               )
-
-case class User(
-                 name: Option[String],
-                 password: Option[String],
-                 permission: Option[Set[Permission]]
-               )
-
-case class User(
-                 name: Option[String],
-                 password: Option[String],
-                 permission: Option[Set[Permission]],
-                 quota: Option[Set[Quota]],
-                 settings: Option[List[Settings]]
-               )
-
-case class User(
-                 name: String,
-                 password: String,
-                 permission: Option[Set[Permission]]
-               )
-
-case class User(
                  name: String,
                  password: String,
                  permission: Option[Set[Permission]],
                  quota: Option[Set[Quota]],
-                 settings: Option[List[Settings]]
+                 settings: Option[List[Settings2]]
                )
+
+case class User1(
+                  name: String,
+                  password: String,
+                  permission: Option[Set[Permission1]]
+                )
+
+case class User2(
+                  name: String,
+                  password: String,
+                  permission: Option[Set[Permission2]]
+                )
+
+case class User3(
+                  authenticationPlugin: Option[String],
+                  connectionLimits: Option[List[ConnectionLimits]],
+                  globalPermissions: Option[Set[Option[String]]],
+                  name: String,
+                  password: String,
+                  permission: Option[Set[Permission3]]
+                )
+
+case class User4(
+                  connLimit: Option[Int],
+                  grants: Option[List[Option[String]]],
+                  login: Option[Boolean],
+                  name: String,
+                  password: String,
+                  permission: Option[Set[Permission]],
+                  settings: Option[Map[String, Option[String]]]
+                )
+
+case class User5(
+                  name: String,
+                  password: String,
+                  permission: Option[Set[Permission5]]
+                )
 
 case class ValidationContext(
                               trustedCaBytes: Option[String],
@@ -3321,31 +2679,18 @@ case class Website(
 case class Widgets(
                     chart: Option[List[Chart]],
                     position: Option[List[Position]],
-                    text: Option[List[Text]],
+                    text: Option[List[Text1]],
                     title: Option[List[Title]]
                   )
 
 case class WiredTiger(
-                       blockCompressor: Option[String],
                        cacheSizeGb: Option[Double]
                      )
 
-case class WiredTiger(
-                       cacheSizeGb: Option[Double]
-                     )
-
-case class YandexAlbBackendGroup(
-                                  backendGroupId: Option[String],
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  folderId: Option[String],
-                                  grpcBackend: Option[List[GrpcBackend]],
-                                  httpBackend: Option[List[HttpBackend]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  name: Option[String],
-                                  sessionAffinity: Option[List[SessionAffinity]],
-                                  streamBackend: Option[List[StreamBackend]]
-                                )
+case class WiredTiger1(
+                        blockCompressor: Option[String],
+                        cacheSizeGb: Option[Double]
+                      )
 
 case class YandexAlbBackendGroup(
                                   createdAt: Option[String],
@@ -3358,16 +2703,6 @@ case class YandexAlbBackendGroup(
                                   sessionAffinity: Option[List[SessionAffinity]],
                                   streamBackend: Option[List[StreamBackend]]
                                 )
-
-case class YandexAlbHttpRouter(
-                                createdAt: Option[String],
-                                description: Option[String],
-                                folderId: Option[String],
-                                httpRouterId: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String],
-                                routeOptions: Option[List[RouteOptions]]
-                              )
 
 case class YandexAlbHttpRouter(
                                 createdAt: Option[String],
@@ -3394,23 +2729,6 @@ case class YandexAlbLoadBalancer(
                                   status: Option[String]
                                 )
 
-case class YandexAlbLoadBalancer(
-                                  allocationPolicy: Option[List[AllocationPolicy]],
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  folderId: Option[String],
-                                  labels: Option[Map[String, Option[String]]],
-                                  listener: Option[List[Listener]],
-                                  loadBalancerId: Option[String],
-                                  logGroupId: Option[String],
-                                  logOptions: Option[List[LogOptions]],
-                                  name: Option[String],
-                                  networkId: Option[String],
-                                  regionId: Option[String],
-                                  securityGroupIds: Option[Set[Option[String]]],
-                                  status: Option[String]
-                                )
-
 case class YandexAlbTargetGroup(
                                  createdAt: Option[String],
                                  description: Option[String],
@@ -3420,27 +2738,6 @@ case class YandexAlbTargetGroup(
                                  target: Option[List[Target]]
                                )
 
-case class YandexAlbTargetGroup(
-                                 createdAt: Option[String],
-                                 description: Option[String],
-                                 folderId: Option[String],
-                                 labels: Option[Map[String, Option[String]]],
-                                 name: Option[String],
-                                 target: Option[List[Target]],
-                                 targetGroupId: Option[String]
-                               )
-
-case class YandexAlbVirtualHost(
-                                 authority: Option[Set[Option[String]]],
-                                 httpRouterId: Option[String],
-                                 modifyRequestHeaders: Option[List[ModifyRequestHeaders]],
-                                 modifyResponseHeaders: Option[List[ModifyResponseHeaders]],
-                                 name: Option[String],
-                                 route: Option[List[Route]],
-                                 routeOptions: Option[List[RouteOptions]],
-                                 virtualHostId: Option[String]
-                               )
-
 case class YandexAlbVirtualHost(
                                  authority: Option[Set[Option[String]]],
                                  httpRouterId: String,
@@ -3448,23 +2745,8 @@ case class YandexAlbVirtualHost(
                                  modifyResponseHeaders: Option[List[ModifyResponseHeaders]],
                                  name: String,
                                  route: Option[List[Route]],
-                                 routeOptions: Option[List[RouteOptions]]
+                                 routeOptions: Option[List[RouteOptions2]]
                                )
-
-case class YandexApiGateway(
-                             apiGatewayId: Option[String],
-                             connectivity: Option[List[Connectivity]],
-                             createdAt: Option[String],
-                             customDomains: Option[Set[CustomDomains]],
-                             description: Option[String],
-                             domain: Option[String],
-                             folderId: Option[String],
-                             labels: Option[Map[String, Option[String]]],
-                             logGroupId: Option[String],
-                             name: Option[String],
-                             status: Option[String],
-                             userDomains: Option[Set[Option[String]]]
-                           )
 
 case class YandexApiGateway(
                              connectivity: Option[List[Connectivity]],
@@ -3488,14 +2770,6 @@ case class YandexBillingCloudBinding(
 
 case class YandexCdnOriginGroup(
                                  folderId: Option[String],
-                                 name: Option[String],
-                                 origin: Option[Set[Origin]],
-                                 originGroupId: Option[Int],
-                                 useNext: Option[Boolean]
-                               )
-
-case class YandexCdnOriginGroup(
-                                 folderId: Option[String],
                                  name: String,
                                  origin: Set[Origin],
                                  useNext: Option[Boolean]
@@ -3510,53 +2784,10 @@ case class YandexCdnResource(
                               originGroupId: Option[Int],
                               originGroupName: Option[String],
                               originProtocol: Option[String],
-                              resourceId: Option[String],
                               secondaryHostnames: Option[Set[Option[String]]],
                               sslCertificate: Option[Set[SslCertificate]],
                               updatedAt: Option[String]
                             )
-
-case class YandexCdnResource(
-                              active: Option[Boolean],
-                              cname: Option[String],
-                              createdAt: Option[String],
-                              folderId: Option[String],
-                              options: Option[List[Options]],
-                              originGroupId: Option[Int],
-                              originGroupName: Option[String],
-                              originProtocol: Option[String],
-                              secondaryHostnames: Option[Set[Option[String]]],
-                              sslCertificate: Option[Set[SslCertificate]],
-                              updatedAt: Option[String]
-                            )
-
-case class YandexClientConfig(
-                               cloudId: Option[String],
-                               folderId: Option[String],
-                               iamToken: Option[String],
-                               zone: Option[String]
-                             )
-
-case class YandexCmCertificate(
-                                certificateId: Option[String],
-                                challenges: Option[List[Challenges]],
-                                createdAt: Option[String],
-                                description: Option[String],
-                                domains: Option[List[Option[String]]],
-                                folderId: Option[String],
-                                issuedAt: Option[String],
-                                issuer: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String],
-                                notAfter: Option[String],
-                                notBefore: Option[String],
-                                serial: Option[String],
-                                status: Option[String],
-                                subject: Option[String],
-                                `type`: Option[String],
-                                updatedAt: Option[String],
-                                waitValidation: Option[Boolean]
-                              )
 
 case class YandexCmCertificate(
                                 challenges: Option[List[Challenges]],
@@ -3580,16 +2811,6 @@ case class YandexCmCertificate(
                                 updatedAt: Option[String]
                               )
 
-case class YandexCmCertificateContent(
-                                       certificateId: Option[String],
-                                       certificates: Option[List[Option[String]]],
-                                       folderId: Option[String],
-                                       name: Option[String],
-                                       privateKey: Option[String],
-                                       privateKeyFormat: Option[String],
-                                       waitValidation: Option[Boolean]
-                                     )
-
 case class YandexComputeDisk(
                               allowRecreate: Option[Boolean],
                               blockSize: Option[Int],
@@ -3608,36 +2829,6 @@ case class YandexComputeDisk(
                               zone: Option[String]
                             )
 
-case class YandexComputeDisk(
-                              blockSize: Option[Int],
-                              createdAt: Option[String],
-                              description: Option[String],
-                              diskId: Option[String],
-                              diskPlacementPolicy: Option[List[DiskPlacementPolicy]],
-                              folderId: Option[String],
-                              imageId: Option[String],
-                              instanceIds: Option[List[Option[String]]],
-                              labels: Option[Map[String, Option[String]]],
-                              name: Option[String],
-                              productIds: Option[List[Option[String]]],
-                              size: Option[Int],
-                              snapshotId: Option[String],
-                              status: Option[String],
-                              `type`: Option[String],
-                              zone: Option[String]
-                            )
-
-case class YandexComputeDiskPlacementGroup(
-                                            createdAt: Option[String],
-                                            description: Option[String],
-                                            folderId: Option[String],
-                                            groupId: Option[String],
-                                            labels: Option[Map[String, Option[String]]],
-                                            name: Option[String],
-                                            status: Option[String],
-                                            zone: Option[String]
-                                          )
-
 case class YandexComputeDiskPlacementGroup(
                                             createdAt: Option[String],
                                             description: Option[String],
@@ -3647,20 +2838,6 @@ case class YandexComputeDiskPlacementGroup(
                                             status: Option[String],
                                             zone: Option[String]
                                           )
-
-case class YandexComputeFilesystem(
-                                    blockSize: Option[Int],
-                                    createdAt: Option[String],
-                                    description: Option[String],
-                                    filesystemId: Option[String],
-                                    folderId: Option[String],
-                                    labels: Option[Map[String, Option[String]]],
-                                    name: Option[String],
-                                    size: Option[Int],
-                                    status: Option[String],
-                                    `type`: Option[String],
-                                    zone: Option[String]
-                                  )
 
 case class YandexComputeFilesystem(
                                     blockSize: Option[Int],
@@ -3679,40 +2856,12 @@ case class YandexComputeGpuCluster(
                                     createdAt: Option[String],
                                     description: Option[String],
                                     folderId: Option[String],
-                                    gpuClusterId: Option[String],
                                     interconnectType: Option[String],
                                     labels: Option[Map[String, Option[String]]],
                                     name: Option[String],
                                     status: Option[String],
                                     zone: Option[String]
                                   )
-
-case class YandexComputeGpuCluster(
-                                    createdAt: Option[String],
-                                    description: Option[String],
-                                    folderId: Option[String],
-                                    interconnectType: Option[String],
-                                    labels: Option[Map[String, Option[String]]],
-                                    name: Option[String],
-                                    status: Option[String],
-                                    zone: Option[String]
-                                  )
-
-case class YandexComputeImage(
-                               createdAt: Option[String],
-                               description: Option[String],
-                               family: Option[String],
-                               folderId: Option[String],
-                               imageId: Option[String],
-                               labels: Option[Map[String, Option[String]]],
-                               minDiskSize: Option[Int],
-                               name: Option[String],
-                               osType: Option[String],
-                               pooled: Option[Boolean],
-                               productIds: Option[Set[Option[String]]],
-                               size: Option[Int],
-                               status: Option[String]
-                             )
 
 case class YandexComputeImage(
                                createdAt: Option[String],
@@ -3762,34 +2911,8 @@ case class YandexComputeInstance(
                                   zone: Option[String]
                                 )
 
-case class YandexComputeInstance(
-                                  bootDisk: Option[List[BootDisk]],
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  filesystem: Option[Set[Filesystem]],
-                                  folderId: Option[String],
-                                  fqdn: Option[String],
-                                  gpuClusterId: Option[String],
-                                  instanceId: Option[String],
-                                  labels: Option[Map[String, Option[String]]],
-                                  localDisk: Option[List[LocalDisk]],
-                                  metadata: Option[Map[String, Option[String]]],
-                                  metadataOptions: Option[List[MetadataOptions]],
-                                  name: Option[String],
-                                  networkAccelerationType: Option[String],
-                                  networkInterface: Option[List[NetworkInterface]],
-                                  placementPolicy: Option[List[PlacementPolicy]],
-                                  platformId: Option[String],
-                                  resources: Option[List[Resources]],
-                                  schedulingPolicy: Option[List[SchedulingPolicy]],
-                                  secondaryDisk: Option[List[SecondaryDisk]],
-                                  serviceAccountId: Option[String],
-                                  status: Option[String],
-                                  zone: Option[String]
-                                )
-
 case class YandexComputeInstanceGroup(
-                                       allocationPolicy: List[AllocationPolicy],
+                                       allocationPolicy: List[AllocationPolicy1],
                                        applicationLoadBalancer: Option[List[ApplicationLoadBalancer]],
                                        createdAt: Option[String],
                                        deletionProtection: Option[Boolean],
@@ -3809,39 +2932,6 @@ case class YandexComputeInstanceGroup(
                                        variables: Option[Map[String, Option[String]]]
                                      )
 
-case class YandexComputeInstanceGroup(
-                                       allocationPolicy: Option[List[AllocationPolicy]],
-                                       applicationBalancerState: Option[List[ApplicationBalancerState]],
-                                       applicationLoadBalancer: Option[List[ApplicationLoadBalancer]],
-                                       createdAt: Option[String],
-                                       deletionProtection: Option[Boolean],
-                                       deployPolicy: Option[List[DeployPolicy]],
-                                       description: Option[String],
-                                       folderId: Option[String],
-                                       healthCheck: Option[List[HealthCheck]],
-                                       instanceGroupId: String,
-                                       instanceTemplate: Option[List[InstanceTemplate]],
-                                       instances: Option[List[Instances]],
-                                       labels: Option[Map[String, Option[String]]],
-                                       loadBalancer: Option[List[LoadBalancer]],
-                                       loadBalancerState: Option[List[LoadBalancerState]],
-                                       maxCheckingHealthDuration: Option[Int],
-                                       name: Option[String],
-                                       scalePolicy: Option[List[ScalePolicy]],
-                                       serviceAccountId: Option[String],
-                                       status: Option[String],
-                                       variables: Option[Map[String, Option[String]]]
-                                     )
-
-case class YandexComputePlacementGroup(
-                                        createdAt: Option[String],
-                                        description: Option[String],
-                                        folderId: Option[String],
-                                        groupId: Option[String],
-                                        labels: Option[Map[String, Option[String]]],
-                                        name: Option[String]
-                                      )
-
 case class YandexComputePlacementGroup(
                                         createdAt: Option[String],
                                         description: Option[String],
@@ -3849,20 +2939,6 @@ case class YandexComputePlacementGroup(
                                         labels: Option[Map[String, Option[String]]],
                                         name: Option[String]
                                       )
-
-case class YandexComputeSnapshot(
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  diskSize: Option[Int],
-                                  folderId: Option[String],
-                                  labels: Option[Map[String, Option[String]]],
-                                  name: Option[String],
-                                  productIds: Option[List[Option[String]]],
-                                  snapshotId: Option[String],
-                                  sourceDiskId: Option[String],
-                                  status: Option[String],
-                                  storageSize: Option[Int]
-                                )
 
 case class YandexComputeSnapshot(
                                   createdAt: Option[String],
@@ -3885,33 +2961,9 @@ case class YandexComputeSnapshotSchedule(
                                           retentionPeriod: Option[String],
                                           schedulePolicy: Option[List[SchedulePolicy]],
                                           snapshotCount: Option[Int],
-                                          snapshotScheduleId: Option[String],
                                           snapshotSpec: Option[List[SnapshotSpec]],
                                           status: Option[String]
                                         )
-
-case class YandexComputeSnapshotSchedule(
-                                          createdAt: Option[String],
-                                          description: Option[String],
-                                          diskIds: Option[List[Option[String]]],
-                                          folderId: Option[String],
-                                          labels: Option[Map[String, Option[String]]],
-                                          name: Option[String],
-                                          retentionPeriod: Option[String],
-                                          schedulePolicy: Option[List[SchedulePolicy]],
-                                          snapshotCount: Option[Int],
-                                          snapshotSpec: Option[List[SnapshotSpec]],
-                                          status: Option[String]
-                                        )
-
-case class YandexContainerRegistry(
-                                    createdAt: Option[String],
-                                    folderId: Option[String],
-                                    labels: Option[Map[String, Option[String]]],
-                                    name: Option[String],
-                                    registryId: Option[String],
-                                    status: Option[String]
-                                  )
 
 case class YandexContainerRegistry(
                                     createdAt: Option[String],
@@ -3931,20 +2983,8 @@ case class YandexContainerRegistryIamBinding(
 case class YandexContainerRegistryIpPermission(
                                                 pull: Option[Set[Option[String]]],
                                                 push: Option[Set[Option[String]]],
-                                                registryId: Option[String],
-                                                registryName: Option[String]
-                                              )
-
-case class YandexContainerRegistryIpPermission(
-                                                pull: Option[Set[Option[String]]],
-                                                push: Option[Set[Option[String]]],
                                                 registryId: String
                                               )
-
-case class YandexContainerRepository(
-                                      name: Option[String],
-                                      repositoryId: Option[String]
-                                    )
 
 case class YandexContainerRepository(
                                       name: String
@@ -3956,16 +2996,6 @@ case class YandexContainerRepositoryIamBinding(
                                                 role: String,
                                                 sleepAfter: Option[Int]
                                               )
-
-case class YandexContainerRepositoryLifecyclePolicy(
-                                                     createdAt: Option[String],
-                                                     description: Option[String],
-                                                     lifecyclePolicyId: Option[String],
-                                                     name: Option[String],
-                                                     repositoryId: Option[String],
-                                                     rule: Option[List[Rule]],
-                                                     status: Option[String]
-                                                   )
 
 case class YandexContainerRepositoryLifecyclePolicy(
                                                      createdAt: Option[String],
@@ -3988,23 +3018,6 @@ case class YandexDataprocCluster(
                                   name: String,
                                   securityGroupIds: Option[Set[Option[String]]],
                                   serviceAccountId: String,
-                                  uiProxy: Option[Boolean],
-                                  zoneId: Option[String]
-                                )
-
-case class YandexDataprocCluster(
-                                  bucket: Option[String],
-                                  clusterConfig: Option[List[ClusterConfig]],
-                                  clusterId: Option[String],
-                                  createdAt: Option[String],
-                                  deletionProtection: Option[Boolean],
-                                  description: Option[String],
-                                  folderId: Option[String],
-                                  hostGroupIds: Option[Set[Option[String]]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  name: Option[String],
-                                  securityGroupIds: Option[Set[Option[String]]],
-                                  serviceAccountId: Option[String],
                                   uiProxy: Option[Boolean],
                                   zoneId: Option[String]
                                 )
@@ -4040,18 +3053,6 @@ case class YandexDnsRecordset(
 case class YandexDnsZone(
                           createdAt: Option[String],
                           description: Option[String],
-                          dnsZoneId: Option[String],
-                          folderId: Option[String],
-                          labels: Option[Map[String, Option[String]]],
-                          name: Option[String],
-                          privateNetworks: Option[Set[Option[String]]],
-                          public: Option[Boolean],
-                          zone: Option[String]
-                        )
-
-case class YandexDnsZone(
-                          createdAt: Option[String],
-                          description: Option[String],
                           folderId: Option[String],
                           labels: Option[Map[String, Option[String]]],
                           name: Option[String],
@@ -4083,38 +3084,12 @@ case class YandexFunction(
                            version: Option[String]
                          )
 
-case class YandexFunction(
-                           connectivity: Option[List[Connectivity]],
-                           createdAt: Option[String],
-                           description: Option[String],
-                           entrypoint: Option[String],
-                           environment: Option[Map[String, Option[String]]],
-                           executionTimeout: Option[String],
-                           folderId: Option[String],
-                           functionId: Option[String],
-                           imageSize: Option[Int],
-                           labels: Option[Map[String, Option[String]]],
-                           loggroupId: Option[String],
-                           memory: Option[Int],
-                           name: Option[String],
-                           runtime: Option[String],
-                           secrets: Option[List[Secrets]],
-                           serviceAccountId: Option[String],
-                           tags: Option[Set[Option[String]]],
-                           version: Option[String]
-                         )
-
 case class YandexFunctionIamBinding(
                                      functionId: String,
                                      members: Set[Option[String]],
                                      role: String,
                                      sleepAfter: Option[Int]
                                    )
-
-case class YandexFunctionScalingPolicy(
-                                        functionId: String,
-                                        policy: Option[List[Policy]]
-                                      )
 
 case class YandexFunctionScalingPolicy(
                                         functionId: String,
@@ -4133,46 +3108,10 @@ case class YandexFunctionTrigger(
                                   logGroup: Option[List[LogGroup]],
                                   logging: Option[List[Logging]],
                                   messageQueue: Option[List[MessageQueue]],
-                                  name: Option[String],
-                                  objectStorage: Option[List[ObjectStorage]],
-                                  timer: Option[List[Timer]],
-                                  triggerId: Option[String]
-                                )
-
-case class YandexFunctionTrigger(
-                                  container: Option[List[Container]],
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  dlq: Option[List[Dlq]],
-                                  folderId: Option[String],
-                                  function: Option[List[Function]],
-                                  iot: Option[List[Iot]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  logGroup: Option[List[LogGroup]],
-                                  logging: Option[List[Logging]],
-                                  messageQueue: Option[List[MessageQueue]],
                                   name: String,
                                   objectStorage: Option[List[ObjectStorage]],
                                   timer: Option[List[Timer]]
                                 )
-
-case class YandexIamPolicy(
-                            binding: Set[Binding],
-                            policyData: Option[String]
-                          )
-
-case class YandexIamRole(
-                          description: Option[String],
-                          roleId: Option[String]
-                        )
-
-case class YandexIamServiceAccount(
-                                    createdAt: Option[String],
-                                    description: Option[String],
-                                    folderId: Option[String],
-                                    name: Option[String],
-                                    serviceAccountId: Option[String]
-                                  )
 
 case class YandexIamServiceAccount(
                                     createdAt: Option[String],
@@ -4234,22 +3173,6 @@ case class YandexIamServiceAccountStaticAccessKey(
                                                    serviceAccountId: String
                                                  )
 
-case class YandexIamUser(
-                          defaultEmail: Option[String],
-                          login: Option[String],
-                          userId: Option[String]
-                        )
-
-case class YandexIotCoreBroker(
-                                brokerId: Option[String],
-                                certificates: Option[Set[Option[String]]],
-                                createdAt: Option[String],
-                                description: Option[String],
-                                folderId: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String]
-                              )
-
 case class YandexIotCoreBroker(
                                 certificates: Option[Set[Option[String]]],
                                 createdAt: Option[String],
@@ -4264,32 +3187,10 @@ case class YandexIotCoreDevice(
                                 certificates: Option[Set[Option[String]]],
                                 createdAt: Option[String],
                                 description: Option[String],
-                                deviceId: Option[String],
-                                name: Option[String],
-                                passwords: Option[Set[Option[String]]],
-                                registryId: Option[String]
-                              )
-
-case class YandexIotCoreDevice(
-                                aliases: Option[Map[String, Option[String]]],
-                                certificates: Option[Set[Option[String]]],
-                                createdAt: Option[String],
-                                description: Option[String],
                                 name: String,
                                 passwords: Option[Set[Option[String]]],
                                 registryId: String
                               )
-
-case class YandexIotCoreRegistry(
-                                  certificates: Option[Set[Option[String]]],
-                                  createdAt: Option[String],
-                                  description: Option[String],
-                                  folderId: Option[String],
-                                  labels: Option[Map[String, Option[String]]],
-                                  name: Option[String],
-                                  passwords: Option[Set[Option[String]]],
-                                  registryId: Option[String]
-                                )
 
 case class YandexIotCoreRegistry(
                                   certificates: Option[Set[Option[String]]],
@@ -4328,31 +3229,6 @@ case class YandexKmsSymmetricKeyIamBinding(
                                           )
 
 case class YandexKubernetesCluster(
-                                    clusterId: Option[String],
-                                    clusterIpv4Range: Option[String],
-                                    clusterIpv6Range: Option[String],
-                                    createdAt: Option[String],
-                                    description: Option[String],
-                                    folderId: Option[String],
-                                    health: Option[String],
-                                    kmsProvider: Option[List[KmsProvider]],
-                                    labels: Option[Map[String, Option[String]]],
-                                    logGroupId: Option[String],
-                                    master: Option[List[Master]],
-                                    name: Option[String],
-                                    networkId: Option[String],
-                                    networkImplementation: Option[List[NetworkImplementation]],
-                                    networkPolicyProvider: Option[String],
-                                    nodeIpv4CidrMaskSize: Option[Int],
-                                    nodeServiceAccountId: Option[String],
-                                    releaseChannel: Option[String],
-                                    serviceAccountId: Option[String],
-                                    serviceIpv4Range: Option[String],
-                                    serviceIpv6Range: Option[String],
-                                    status: Option[String]
-                                  )
-
-case class YandexKubernetesCluster(
                                     clusterIpv4Range: Option[String],
                                     clusterIpv6Range: Option[String],
                                     createdAt: Option[String],
@@ -4377,41 +3253,20 @@ case class YandexKubernetesCluster(
                                   )
 
 case class YandexKubernetesNodeGroup(
-                                      allocationPolicy: Option[List[AllocationPolicy]],
-                                      allowedUnsafeSysctls: Option[List[Option[String]]],
-                                      clusterId: Option[String],
-                                      createdAt: Option[String],
-                                      deployPolicy: Option[List[DeployPolicy]],
-                                      description: Option[String],
-                                      folderId: Option[String],
-                                      instanceGroupId: Option[String],
-                                      instanceTemplate: Option[List[InstanceTemplate]],
-                                      labels: Option[Map[String, Option[String]]],
-                                      maintenancePolicy: Option[List[MaintenancePolicy]],
-                                      name: Option[String],
-                                      nodeGroupId: Option[String],
-                                      nodeLabels: Option[Map[String, Option[String]]],
-                                      nodeTaints: Option[List[Option[String]]],
-                                      scalePolicy: Option[List[ScalePolicy]],
-                                      status: Option[String],
-                                      versionInfo: Option[List[VersionInfo]]
-                                    )
-
-case class YandexKubernetesNodeGroup(
-                                      allocationPolicy: Option[List[AllocationPolicy]],
+                                      allocationPolicy: Option[List[AllocationPolicy2]],
                                       allowedUnsafeSysctls: Option[List[Option[String]]],
                                       clusterId: String,
                                       createdAt: Option[String],
-                                      deployPolicy: Option[List[DeployPolicy]],
+                                      deployPolicy: Option[List[DeployPolicy1]],
                                       description: Option[String],
                                       instanceGroupId: Option[String],
-                                      instanceTemplate: List[InstanceTemplate],
+                                      instanceTemplate: List[InstanceTemplate1],
                                       labels: Option[Map[String, Option[String]]],
-                                      maintenancePolicy: Option[List[MaintenancePolicy]],
+                                      maintenancePolicy: Option[List[MaintenancePolicy1]],
                                       name: Option[String],
                                       nodeLabels: Option[Map[String, Option[String]]],
                                       nodeTaints: Option[List[Option[String]]],
-                                      scalePolicy: List[ScalePolicy],
+                                      scalePolicy: List[ScalePolicy1],
                                       status: Option[String],
                                       version: Option[String],
                                       versionInfo: Option[List[VersionInfo]]
@@ -4424,21 +3279,7 @@ case class YandexLbNetworkLoadBalancer(
                                         description: Option[String],
                                         folderId: Option[String],
                                         labels: Option[Map[String, Option[String]]],
-                                        listener: Option[Set[Listener]],
-                                        name: Option[String],
-                                        networkLoadBalancerId: Option[String],
-                                        regionId: Option[String],
-                                        `type`: Option[String]
-                                      )
-
-case class YandexLbNetworkLoadBalancer(
-                                        attachedTargetGroup: Option[Set[AttachedTargetGroup]],
-                                        createdAt: Option[String],
-                                        deletionProtection: Option[Boolean],
-                                        description: Option[String],
-                                        folderId: Option[String],
-                                        labels: Option[Map[String, Option[String]]],
-                                        listener: Option[Set[Listener]],
+                                        listener: Option[Set[Listener1]],
                                         name: Option[String],
                                         regionId: Option[String],
                                         `type`: Option[String]
@@ -4451,30 +3292,7 @@ case class YandexLbTargetGroup(
                                 labels: Option[Map[String, Option[String]]],
                                 name: Option[String],
                                 regionId: Option[String],
-                                target: Option[Set[Target]]
-                              )
-
-case class YandexLbTargetGroup(
-                                createdAt: Option[String],
-                                description: Option[String],
-                                folderId: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String],
-                                target: Option[Set[Target]],
-                                targetGroupId: Option[String]
-                              )
-
-case class YandexLockboxSecret(
-                                createdAt: Option[String],
-                                currentVersion: Option[List[CurrentVersion]],
-                                deletionProtection: Option[Boolean],
-                                description: Option[String],
-                                folderId: Option[String],
-                                kmsKeyId: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String],
-                                secretId: String,
-                                status: Option[String]
+                                target: Option[Set[Target1]]
                               )
 
 case class YandexLockboxSecret(
@@ -4494,25 +3312,6 @@ case class YandexLockboxSecretVersion(
                                        secretId: String
                                      )
 
-case class YandexLockboxSecretVersion(
-                                       entries: Option[List[Entries]],
-                                       secretId: String,
-                                       versionId: Option[String]
-                                     )
-
-case class YandexLoggingGroup(
-                               cloudId: Option[String],
-                               createdAt: Option[String],
-                               dataStream: Option[String],
-                               description: Option[String],
-                               folderId: Option[String],
-                               groupId: Option[String],
-                               labels: Option[Map[String, Option[String]]],
-                               name: Option[String],
-                               retentionPeriod: Option[String],
-                               status: Option[String]
-                             )
-
 case class YandexLoggingGroup(
                                cloudId: Option[String],
                                createdAt: Option[String],
@@ -4524,41 +3323,6 @@ case class YandexLoggingGroup(
                                retentionPeriod: Option[String],
                                status: Option[String]
                              )
-
-case class YandexMdbClickhouseCluster(
-                                       access: Option[List[Access]],
-                                       adminPassword: Option[String],
-                                       backupWindowStart: Option[List[BackupWindowStart]],
-                                       clickhouse: Option[List[Clickhouse]],
-                                       cloudStorage: Option[List[CloudStorage]],
-                                       clusterId: Option[String],
-                                       copySchemaOnNewHosts: Option[Boolean],
-                                       createdAt: Option[String],
-                                       database: Option[Set[Database]],
-                                       deletionProtection: Option[Boolean],
-                                       description: Option[String],
-                                       embeddedKeeper: Option[Boolean],
-                                       environment: Option[String],
-                                       folderId: Option[String],
-                                       formatSchema: Option[Set[FormatSchema]],
-                                       health: Option[String],
-                                       host: Option[List[Host]],
-                                       labels: Option[Map[String, Option[String]]],
-                                       maintenanceWindow: Option[List[MaintenanceWindow]],
-                                       mlModel: Option[Set[MlModel]],
-                                       name: Option[String],
-                                       networkId: Option[String],
-                                       securityGroupIds: Option[Set[Option[String]]],
-                                       serviceAccountId: Option[String],
-                                       shard: Option[Set[Shard]],
-                                       shardGroup: Option[List[ShardGroup]],
-                                       sqlDatabaseManagement: Option[Boolean],
-                                       sqlUserManagement: Option[Boolean],
-                                       status: Option[String],
-                                       user: Option[Set[User]],
-                                       version: Option[String],
-                                       zookeeper: Option[List[Zookeeper]]
-                                     )
 
 case class YandexMdbClickhouseCluster(
                                        access: Option[List[Access]],
@@ -4579,7 +3343,7 @@ case class YandexMdbClickhouseCluster(
                                        health: Option[String],
                                        host: List[Host],
                                        labels: Option[Map[String, Option[String]]],
-                                       maintenanceWindow: Option[List[MaintenanceWindow]],
+                                       maintenanceWindow: Option[List[MaintenanceWindow1]],
                                        mlModel: Option[Set[MlModel]],
                                        name: String,
                                        networkId: String,
@@ -4596,35 +3360,16 @@ case class YandexMdbClickhouseCluster(
                                      )
 
 case class YandexMdbElasticsearchCluster(
-                                          clusterId: Option[String],
-                                          config: Option[List[Config]],
-                                          createdAt: Option[String],
-                                          deletionProtection: Option[Boolean],
-                                          description: Option[String],
-                                          environment: Option[String],
-                                          folderId: Option[String],
-                                          health: Option[String],
-                                          host: Option[Set[Host]],
-                                          labels: Option[Map[String, Option[String]]],
-                                          maintenanceWindow: Option[List[MaintenanceWindow]],
-                                          name: Option[String],
-                                          networkId: Option[String],
-                                          securityGroupIds: Option[Set[Option[String]]],
-                                          serviceAccountId: Option[String],
-                                          status: Option[String]
-                                        )
-
-case class YandexMdbElasticsearchCluster(
-                                          config: List[Config],
+                                          config: List[Config1],
                                           createdAt: Option[String],
                                           deletionProtection: Option[Boolean],
                                           description: Option[String],
                                           environment: String,
                                           folderId: Option[String],
                                           health: Option[String],
-                                          host: Option[Set[Host]],
+                                          host: Option[Set[Host1]],
                                           labels: Option[Map[String, Option[String]]],
-                                          maintenanceWindow: Option[List[MaintenanceWindow]],
+                                          maintenanceWindow: Option[List[MaintenanceWindow2]],
                                           name: String,
                                           networkId: String,
                                           securityGroupIds: Option[Set[Option[String]]],
@@ -4633,7 +3378,7 @@ case class YandexMdbElasticsearchCluster(
                                         )
 
 case class YandexMdbGreenplumCluster(
-                                      access: Option[List[Access]],
+                                      access: Option[List[Access1]],
                                       assignPublicIp: Boolean,
                                       backupWindowStart: Option[List[BackupWindowStart]],
                                       createdAt: Option[String],
@@ -4644,7 +3389,7 @@ case class YandexMdbGreenplumCluster(
                                       greenplumConfig: Option[Map[String, Option[String]]],
                                       health: Option[String],
                                       labels: Option[Map[String, Option[String]]],
-                                      maintenanceWindow: Option[List[MaintenanceWindow]],
+                                      maintenanceWindow: Option[List[MaintenanceWindow3]],
                                       masterHostCount: Int,
                                       masterHosts: Option[List[MasterHosts]],
                                       masterSubcluster: List[MasterSubcluster],
@@ -4664,80 +3409,25 @@ case class YandexMdbGreenplumCluster(
                                       zone: String
                                     )
 
-case class YandexMdbGreenplumCluster(
-                                      access: Option[List[Access]],
-                                      assignPublicIp: Option[Boolean],
-                                      backupWindowStart: Option[List[BackupWindowStart]],
-                                      clusterId: Option[String],
-                                      createdAt: Option[String],
-                                      deletionProtection: Option[Boolean],
-                                      description: Option[String],
-                                      environment: Option[String],
-                                      folderId: Option[String],
-                                      greenplumConfig: Option[Map[String, Option[String]]],
-                                      health: Option[String],
-                                      labels: Option[Map[String, Option[String]]],
-                                      maintenanceWindow: Option[List[MaintenanceWindow]],
-                                      masterHostCount: Option[Int],
-                                      masterHosts: Option[List[MasterHosts]],
-                                      masterSubcluster: Option[List[MasterSubcluster]],
-                                      name: Option[String],
-                                      networkId: Option[String],
-                                      poolerConfig: Option[List[PoolerConfig]],
-                                      securityGroupIds: Option[Set[Option[String]]],
-                                      segmentHostCount: Option[Int],
-                                      segmentHosts: Option[List[SegmentHosts]],
-                                      segmentInHost: Option[Int],
-                                      segmentSubcluster: Option[List[SegmentSubcluster]],
-                                      status: Option[String],
-                                      subnetId: Option[String],
-                                      userName: Option[String],
-                                      version: Option[String],
-                                      zone: Option[String]
-                                    )
-
 case class YandexMdbKafkaCluster(
-                                  access: Option[List[Access]],
-                                  clusterId: Option[String],
-                                  config: Option[List[Config]],
+                                  config: List[Config2],
                                   createdAt: Option[String],
                                   deletionProtection: Option[Boolean],
                                   description: Option[String],
                                   environment: Option[String],
                                   folderId: Option[String],
                                   health: Option[String],
-                                  host: Option[Set[Host]],
+                                  host: Option[Set[Host2]],
                                   hostGroupIds: Option[Set[Option[String]]],
                                   labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
-                                  name: Option[String],
-                                  networkId: Option[String],
-                                  securityGroupIds: Option[Set[Option[String]]],
-                                  status: Option[String],
-                                  subnetIds: Option[List[Option[String]]],
-                                  topic: Option[List[Topic]],
-                                  user: Option[Set[User]]
-                                )
-
-case class YandexMdbKafkaCluster(
-                                  config: List[Config],
-                                  createdAt: Option[String],
-                                  deletionProtection: Option[Boolean],
-                                  description: Option[String],
-                                  environment: Option[String],
-                                  folderId: Option[String],
-                                  health: Option[String],
-                                  host: Option[Set[Host]],
-                                  hostGroupIds: Option[Set[Option[String]]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
+                                  maintenanceWindow: Option[List[MaintenanceWindow4]],
                                   name: String,
                                   networkId: String,
                                   securityGroupIds: Option[Set[Option[String]]],
                                   status: Option[String],
                                   subnetIds: Option[List[Option[String]]],
                                   topic: Option[List[Topic]],
-                                  user: Option[Set[User]]
+                                  user: Option[Set[User1]]
                                 )
 
 case class YandexMdbKafkaConnector(
@@ -4757,16 +3447,8 @@ case class YandexMdbKafkaTopic(
                                 topicConfig: Option[List[TopicConfig]]
                               )
 
-case class YandexMdbKafkaTopic(
-                                clusterId: String,
-                                name: String,
-                                partitions: Option[Int],
-                                replicationFactor: Option[Int],
-                                topicConfig: Option[List[TopicConfig]]
-                              )
-
 case class YandexMdbMongodbCluster(
-                                    clusterConfig: List[ClusterConfig],
+                                    clusterConfig: List[ClusterConfig1],
                                     clusterId: Option[String],
                                     createdAt: Option[String],
                                     database: Set[Database],
@@ -4775,12 +3457,12 @@ case class YandexMdbMongodbCluster(
                                     environment: String,
                                     folderId: Option[String],
                                     health: Option[String],
-                                    host: List[Host],
+                                    host: List[Host3],
                                     labels: Option[Map[String, Option[String]]],
-                                    maintenanceWindow: Option[List[MaintenanceWindow]],
+                                    maintenanceWindow: Option[List[MaintenanceWindow5]],
                                     name: String,
                                     networkId: String,
-                                    resources: Option[List[Resources]],
+                                    resources: Option[List[Resources12]],
                                     resourcesMongocfg: List[ResourcesMongocfg],
                                     resourcesMongod: Option[List[ResourcesMongod]],
                                     resourcesMongoinfra: List[ResourcesMongoinfra],
@@ -4789,38 +3471,11 @@ case class YandexMdbMongodbCluster(
                                     securityGroupIds: Option[Set[Option[String]]],
                                     sharded: Option[Boolean],
                                     status: Option[String],
-                                    user: Set[User]
-                                  )
-
-case class YandexMdbMongodbCluster(
-                                    clusterConfig: Option[List[ClusterConfig]],
-                                    clusterId: Option[String],
-                                    createdAt: Option[String],
-                                    database: Option[Set[Database]],
-                                    deletionProtection: Option[Boolean],
-                                    description: Option[String],
-                                    environment: Option[String],
-                                    folderId: Option[String],
-                                    health: Option[String],
-                                    host: Option[List[Host]],
-                                    labels: Option[Map[String, Option[String]]],
-                                    maintenanceWindow: Option[List[MaintenanceWindow]],
-                                    name: Option[String],
-                                    networkId: Option[String],
-                                    resources: Option[List[Resources]],
-                                    resourcesMongocfg: List[ResourcesMongocfg],
-                                    resourcesMongod: Option[List[ResourcesMongod]],
-                                    resourcesMongoinfra: List[ResourcesMongoinfra],
-                                    resourcesMongos: List[ResourcesMongos],
-                                    restore: Option[List[Restore]],
-                                    securityGroupIds: Option[Set[Option[String]]],
-                                    sharded: Option[Boolean],
-                                    status: Option[String],
-                                    user: Option[Set[User]]
+                                    user: Set[User2]
                                   )
 
 case class YandexMdbMysqlCluster(
-                                  access: Option[List[Access]],
+                                  access: Option[List[Access4]],
                                   allowRegenerationHost: Option[Boolean],
                                   backupRetainPeriodDays: Option[Int],
                                   backupWindowStart: Option[List[BackupWindowStart]],
@@ -4831,47 +3486,20 @@ case class YandexMdbMysqlCluster(
                                   environment: String,
                                   folderId: Option[String],
                                   health: Option[String],
-                                  host: List[Host],
+                                  host: List[Host4],
                                   hostGroupIds: Option[Set[Option[String]]],
                                   labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
+                                  maintenanceWindow: Option[List[MaintenanceWindow6]],
                                   mysqlConfig: Option[Map[String, Option[String]]],
                                   name: String,
                                   networkId: String,
                                   performanceDiagnostics: Option[List[PerformanceDiagnostics]],
-                                  resources: List[Resources],
+                                  resources: List[Resources13],
                                   restore: Option[List[Restore]],
                                   securityGroupIds: Option[Set[Option[String]]],
                                   status: Option[String],
-                                  user: Option[List[User]],
+                                  user: Option[List[User3]],
                                   version: String
-                                )
-
-case class YandexMdbMysqlCluster(
-                                  access: Option[List[Access]],
-                                  backupRetainPeriodDays: Option[Int],
-                                  backupWindowStart: Option[List[BackupWindowStart]],
-                                  clusterId: Option[String],
-                                  createdAt: Option[String],
-                                  database: Option[Set[Database]],
-                                  deletionProtection: Option[Boolean],
-                                  description: Option[String],
-                                  environment: Option[String],
-                                  folderId: Option[String],
-                                  health: Option[String],
-                                  host: Option[List[Host]],
-                                  hostGroupIds: Option[Set[Option[String]]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
-                                  mysqlConfig: Option[Map[String, Option[String]]],
-                                  name: Option[String],
-                                  networkId: Option[String],
-                                  performanceDiagnostics: Option[List[PerformanceDiagnostics]],
-                                  resources: Option[List[Resources]],
-                                  securityGroupIds: Option[Set[Option[String]]],
-                                  status: Option[String],
-                                  user: Option[List[User]],
-                                  version: Option[String]
                                 )
 
 case class YandexMdbMysqlDatabase(
@@ -4886,71 +3514,30 @@ case class YandexMdbMysqlUser(
                                globalPermissions: Option[Set[Option[String]]],
                                name: String,
                                password: String,
-                               permission: Option[Set[Permission]]
-                             )
-
-case class YandexMdbMysqlUser(
-                               authenticationPlugin: Option[String],
-                               clusterId: String,
-                               connectionLimits: Option[List[ConnectionLimits]],
-                               globalPermissions: Option[Set[Option[String]]],
-                               name: String,
-                               permission: Option[Set[Permission]]
+                               permission: Option[Set[Permission4]]
                              )
 
 case class YandexMdbPostgresqlCluster(
-                                       clusterId: Option[String],
-                                       config: Option[List[Config]],
+                                       config: List[Config3],
                                        createdAt: Option[String],
-                                       database: Option[Set[Database]],
-                                       deletionProtection: Option[Boolean],
-                                       description: Option[String],
-                                       environment: Option[String],
-                                       folderId: Option[String],
-                                       health: Option[String],
-                                       host: Option[List[Host]],
-                                       hostGroupIds: Option[Set[Option[String]]],
-                                       labels: Option[Map[String, Option[String]]],
-                                       maintenanceWindow: Option[List[MaintenanceWindow]],
-                                       name: Option[String],
-                                       networkId: Option[String],
-                                       securityGroupIds: Option[Set[Option[String]]],
-                                       status: Option[String],
-                                       user: Option[List[User]]
-                                     )
-
-case class YandexMdbPostgresqlCluster(
-                                       config: List[Config],
-                                       createdAt: Option[String],
-                                       database: Option[List[Database]],
+                                       database: Option[List[Database1]],
                                        deletionProtection: Option[Boolean],
                                        description: Option[String],
                                        environment: String,
                                        folderId: Option[String],
                                        health: Option[String],
-                                       host: List[Host],
+                                       host: List[Host5],
                                        hostGroupIds: Option[Set[Option[String]]],
                                        hostMasterName: Option[String],
                                        labels: Option[Map[String, Option[String]]],
-                                       maintenanceWindow: Option[List[MaintenanceWindow]],
+                                       maintenanceWindow: Option[List[MaintenanceWindow7]],
                                        name: String,
                                        networkId: String,
-                                       restore: Option[List[Restore]],
+                                       restore: Option[List[Restore1]],
                                        securityGroupIds: Option[Set[Option[String]]],
                                        status: Option[String],
-                                       user: Option[List[User]]
+                                       user: Option[List[User4]]
                                      )
-
-case class YandexMdbPostgresqlDatabase(
-                                        clusterId: String,
-                                        deletionProtection: Option[String],
-                                        extension: Option[Set[Extension]],
-                                        lcCollate: Option[String],
-                                        lcType: Option[String],
-                                        name: String,
-                                        owner: Option[String],
-                                        templateDb: Option[String]
-                                      )
 
 case class YandexMdbPostgresqlDatabase(
                                         clusterId: String,
@@ -4970,89 +3557,31 @@ case class YandexMdbPostgresqlUser(
                                     grants: Option[List[Option[String]]],
                                     login: Option[Boolean],
                                     name: String,
-                                    password: Option[String],
-                                    permission: Option[Set[Permission]],
-                                    settings: Option[Map[String, Option[String]]]
-                                  )
-
-case class YandexMdbPostgresqlUser(
-                                    clusterId: String,
-                                    connLimit: Option[Int],
-                                    deletionProtection: Option[String],
-                                    grants: Option[List[Option[String]]],
-                                    login: Option[Boolean],
-                                    name: String,
                                     password: String,
                                     permission: Option[Set[Permission]],
                                     settings: Option[Map[String, Option[String]]]
                                   )
 
 case class YandexMdbRedisCluster(
-                                  clusterId: Option[String],
-                                  config: Option[List[Config]],
-                                  createdAt: Option[String],
-                                  deletionProtection: Option[Boolean],
-                                  description: Option[String],
-                                  environment: Option[String],
-                                  folderId: Option[String],
-                                  health: Option[String],
-                                  host: Option[List[Host]],
-                                  labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
-                                  name: Option[String],
-                                  networkId: Option[String],
-                                  persistenceMode: Option[String],
-                                  resources: Option[List[Resources]],
-                                  securityGroupIds: Option[Set[Option[String]]],
-                                  sharded: Option[Boolean],
-                                  status: Option[String],
-                                  tlsEnabled: Option[Boolean]
-                                )
-
-case class YandexMdbRedisCluster(
-                                  config: List[Config],
+                                  config: List[Config4],
                                   createdAt: Option[String],
                                   deletionProtection: Option[Boolean],
                                   description: Option[String],
                                   environment: String,
                                   folderId: Option[String],
                                   health: Option[String],
-                                  host: List[Host],
+                                  host: List[Host6],
                                   labels: Option[Map[String, Option[String]]],
-                                  maintenanceWindow: Option[List[MaintenanceWindow]],
+                                  maintenanceWindow: Option[List[MaintenanceWindow8]],
                                   name: String,
                                   networkId: String,
                                   persistenceMode: Option[String],
-                                  resources: List[Resources],
+                                  resources: List[Resources15],
                                   securityGroupIds: Option[Set[Option[String]]],
                                   sharded: Option[Boolean],
                                   status: Option[String],
                                   tlsEnabled: Option[Boolean]
                                 )
-
-case class YandexMdbSqlserverCluster(
-                                      backupWindowStart: Option[List[BackupWindowStart]],
-                                      clusterId: Option[String],
-                                      createdAt: Option[String],
-                                      database: Option[List[Database]],
-                                      deletionProtection: Option[Boolean],
-                                      description: Option[String],
-                                      environment: Option[String],
-                                      folderId: Option[String],
-                                      health: Option[String],
-                                      host: Option[List[Host]],
-                                      hostGroupIds: Option[Set[Option[String]]],
-                                      labels: Option[Map[String, Option[String]]],
-                                      name: Option[String],
-                                      networkId: Option[String],
-                                      resources: Option[List[Resources]],
-                                      securityGroupIds: Option[Set[Option[String]]],
-                                      sqlcollation: Option[String],
-                                      sqlserverConfig: Option[Map[String, Option[String]]],
-                                      status: Option[String],
-                                      user: Option[List[User]],
-                                      version: Option[String]
-                                    )
 
 case class YandexMdbSqlserverCluster(
                                       backupWindowStart: Option[List[BackupWindowStart]],
@@ -5063,17 +3592,17 @@ case class YandexMdbSqlserverCluster(
                                       environment: String,
                                       folderId: Option[String],
                                       health: Option[String],
-                                      host: List[Host],
+                                      host: List[Host7],
                                       hostGroupIds: Option[Set[Option[String]]],
                                       labels: Option[Map[String, Option[String]]],
                                       name: String,
                                       networkId: String,
-                                      resources: List[Resources],
+                                      resources: List[Resources16],
                                       securityGroupIds: Option[Set[Option[String]]],
                                       sqlcollation: Option[String],
                                       sqlserverConfig: Option[Map[String, Option[String]]],
                                       status: Option[String],
-                                      user: List[User],
+                                      user: List[User5],
                                       version: String
                                     )
 
@@ -5094,26 +3623,6 @@ case class YandexMessageQueue(
                                visibilityTimeoutSeconds: Option[Int]
                              )
 
-case class YandexMessageQueue(
-                               accessKey: Option[String],
-                               arn: Option[String],
-                               name: String,
-                               regionId: Option[String],
-                               secretKey: Option[String],
-                               url: Option[String]
-                             )
-
-case class YandexMonitoringDashboard(
-                                      dashboardId: Option[String],
-                                      description: Option[String],
-                                      folderId: Option[String],
-                                      labels: Option[Map[String, Option[String]]],
-                                      name: Option[String],
-                                      parametrization: Option[List[Parametrization]],
-                                      title: Option[String],
-                                      widgets: Option[List[Widgets]]
-                                    )
-
 case class YandexMonitoringDashboard(
                                       dashboardId: Option[String],
                                       description: Option[String],
@@ -5124,15 +3633,6 @@ case class YandexMonitoringDashboard(
                                       title: Option[String],
                                       widgets: Option[List[Widgets]]
                                     )
-
-case class YandexOrganizationmanagerGroup(
-                                           createdAt: Option[String],
-                                           description: Option[String],
-                                           groupId: Option[String],
-                                           members: Option[List[Members]],
-                                           name: Option[String],
-                                           organizationId: Option[String]
-                                         )
 
 case class YandexOrganizationmanagerGroup(
                                            createdAt: Option[String],
@@ -5173,22 +3673,6 @@ case class YandexOrganizationmanagerSamlFederation(
                                                     cookieMaxAge: Option[String],
                                                     createdAt: Option[String],
                                                     description: Option[String],
-                                                    federationId: Option[String],
-                                                    issuer: Option[String],
-                                                    labels: Option[Map[String, Option[String]]],
-                                                    name: Option[String],
-                                                    organizationId: Option[String],
-                                                    securitySettings: Option[List[SecuritySettings]],
-                                                    ssoBinding: Option[String],
-                                                    ssoUrl: Option[String]
-                                                  )
-
-case class YandexOrganizationmanagerSamlFederation(
-                                                    autoCreateAccountOnLogin: Option[Boolean],
-                                                    caseInsensitiveNameIds: Option[Boolean],
-                                                    cookieMaxAge: Option[String],
-                                                    createdAt: Option[String],
-                                                    description: Option[String],
                                                     issuer: String,
                                                     labels: Option[Map[String, Option[String]]],
                                                     name: String,
@@ -5197,18 +3681,6 @@ case class YandexOrganizationmanagerSamlFederation(
                                                     ssoBinding: String,
                                                     ssoUrl: String
                                                   )
-
-case class YandexOrganizationmanagerSamlFederationUserAccount(
-                                                               federationId: String,
-                                                               nameId: String
-                                                             )
-
-case class YandexResourcemanagerCloud(
-                                       cloudId: Option[String],
-                                       createdAt: Option[String],
-                                       description: Option[String],
-                                       name: Option[String]
-                                     )
 
 case class YandexResourcemanagerCloud(
                                        createdAt: Option[String],
@@ -5236,16 +3708,6 @@ case class YandexResourcemanagerFolder(
                                         cloudId: Option[String],
                                         createdAt: Option[String],
                                         description: Option[String],
-                                        folderId: Option[String],
-                                        labels: Option[Map[String, Option[String]]],
-                                        name: Option[String],
-                                        status: Option[String]
-                                      )
-
-case class YandexResourcemanagerFolder(
-                                        cloudId: Option[String],
-                                        createdAt: Option[String],
-                                        description: Option[String],
                                         labels: Option[Map[String, Option[String]]],
                                         name: Option[String]
                                       )
@@ -5268,26 +3730,6 @@ case class YandexResourcemanagerFolderIamPolicy(
                                                  folderId: String,
                                                  policyData: String
                                                )
-
-case class YandexServerlessContainer(
-                                      concurrency: Option[Int],
-                                      connectivity: Option[List[Connectivity]],
-                                      containerId: Option[String],
-                                      coreFraction: Option[Int],
-                                      cores: Option[Int],
-                                      createdAt: Option[String],
-                                      description: Option[String],
-                                      executionTimeout: Option[String],
-                                      folderId: Option[String],
-                                      image: Option[List[Image]],
-                                      labels: Option[Map[String, Option[String]]],
-                                      memory: Option[Int],
-                                      name: Option[String],
-                                      revisionId: Option[String],
-                                      secrets: Option[List[Secrets]],
-                                      serviceAccountId: Option[String],
-                                      url: Option[String]
-                                    )
 
 case class YandexServerlessContainer(
                                       concurrency: Option[Int],
@@ -5329,7 +3771,7 @@ case class YandexStorageBucket(
                                 grant: Option[Set[Grant]],
                                 https: Option[Set[Https]],
                                 lifecycleRule: Option[List[LifecycleRule]],
-                                logging: Option[Set[Logging]],
+                                logging: Option[Set[Logging1]],
                                 maxSize: Option[Int],
                                 objectLockConfiguration: Option[List[ObjectLockConfiguration]],
                                 policy: Option[String],
@@ -5357,23 +3799,10 @@ case class YandexStorageObject(
                               )
 
 case class YandexVpcAddress(
-                             addressId: Option[String],
                              createdAt: Option[String],
                              deletionProtection: Option[Boolean],
                              description: Option[String],
-                             externalIpv4Address: Option[List[ExternalIpv4Address]],
-                             folderId: Option[String],
-                             labels: Option[Map[String, Option[String]]],
-                             name: Option[String],
-                             reserved: Option[Boolean],
-                             used: Option[Boolean]
-                           )
-
-case class YandexVpcAddress(
-                             createdAt: Option[String],
-                             deletionProtection: Option[Boolean],
-                             description: Option[String],
-                             externalIpv4Address: Option[List[ExternalIpv4Address]],
+                             externalIpv4Address: Option[List[ExternalIpv4Address1]],
                              folderId: Option[String],
                              labels: Option[Map[String, Option[String]]],
                              name: Option[String],
@@ -5397,16 +3826,6 @@ case class YandexVpcGateway(
                              createdAt: Option[String],
                              description: Option[String],
                              folderId: Option[String],
-                             gatewayId: Option[String],
-                             labels: Option[Map[String, Option[String]]],
-                             name: Option[String],
-                             sharedEgressGateway: Option[List[SharedEgressGateway]]
-                           )
-
-case class YandexVpcGateway(
-                             createdAt: Option[String],
-                             description: Option[String],
-                             folderId: Option[String],
                              labels: Option[Map[String, Option[String]]],
                              name: Option[String],
                              sharedEgressGateway: Option[List[SharedEgressGateway]]
@@ -5419,30 +3838,8 @@ case class YandexVpcNetwork(
                              folderId: Option[String],
                              labels: Option[Map[String, Option[String]]],
                              name: Option[String],
-                             networkId: Option[String],
                              subnetIds: Option[List[Option[String]]]
                            )
-
-case class YandexVpcNetwork(
-                             createdAt: Option[String],
-                             defaultSecurityGroupId: Option[String],
-                             description: Option[String],
-                             folderId: Option[String],
-                             labels: Option[Map[String, Option[String]]],
-                             name: Option[String],
-                             subnetIds: Option[List[Option[String]]]
-                           )
-
-case class YandexVpcRouteTable(
-                                createdAt: Option[String],
-                                description: Option[String],
-                                folderId: Option[String],
-                                labels: Option[Map[String, Option[String]]],
-                                name: Option[String],
-                                networkId: Option[String],
-                                routeTableId: Option[String],
-                                staticRoute: Option[Set[StaticRoute]]
-                              )
 
 case class YandexVpcRouteTable(
                                 createdAt: Option[String],
@@ -5462,38 +3859,9 @@ case class YandexVpcSecurityGroup(
                                    ingress: Option[Set[Ingress]],
                                    labels: Option[Map[String, Option[String]]],
                                    name: Option[String],
-                                   networkId: Option[String],
-                                   securityGroupId: Option[String],
-                                   status: Option[String]
-                                 )
-
-case class YandexVpcSecurityGroup(
-                                   createdAt: Option[String],
-                                   description: Option[String],
-                                   egress: Option[Set[Egress]],
-                                   folderId: Option[String],
-                                   ingress: Option[Set[Ingress]],
-                                   labels: Option[Map[String, Option[String]]],
-                                   name: Option[String],
                                    networkId: String,
                                    status: Option[String]
                                  )
-
-case class YandexVpcSecurityGroupRule(
-                                       description: Option[String],
-                                       direction: Option[String],
-                                       fromPort: Option[Int],
-                                       labels: Option[Map[String, Option[String]]],
-                                       port: Option[Int],
-                                       predefinedTarget: Option[String],
-                                       protocol: Option[String],
-                                       ruleId: String,
-                                       securityGroupBinding: String,
-                                       securityGroupId: Option[String],
-                                       toPort: Option[Int],
-                                       v4CidrBlocks: Option[List[Option[String]]],
-                                       v6CidrBlocks: Option[List[Option[String]]]
-                                     )
 
 case class YandexVpcSecurityGroupRule(
                                        description: Option[String],
@@ -5517,21 +3885,6 @@ case class YandexVpcSubnet(
                             folderId: Option[String],
                             labels: Option[Map[String, Option[String]]],
                             name: Option[String],
-                            networkId: Option[String],
-                            routeTableId: Option[String],
-                            subnetId: Option[String],
-                            v4CidrBlocks: Option[List[Option[String]]],
-                            v6CidrBlocks: Option[List[Option[String]]],
-                            zone: Option[String]
-                          )
-
-case class YandexVpcSubnet(
-                            createdAt: Option[String],
-                            description: Option[String],
-                            dhcpOptions: Option[List[DhcpOptions]],
-                            folderId: Option[String],
-                            labels: Option[Map[String, Option[String]]],
-                            name: Option[String],
                             networkId: String,
                             routeTableId: Option[String],
                             v4CidrBlocks: List[Option[String]],
@@ -5542,40 +3895,17 @@ case class YandexVpcSubnet(
 case class YandexYdbDatabaseDedicated(
                                        assignPublicIps: Option[Boolean],
                                        createdAt: Option[String],
-                                       databaseId: Option[String],
                                        databasePath: Option[String],
                                        deletionProtection: Option[Boolean],
                                        description: Option[String],
                                        folderId: Option[String],
                                        labels: Option[Map[String, Option[String]]],
-                                       location: Option[List[Location]],
-                                       locationId: Option[String],
-                                       name: Option[String],
-                                       networkId: Option[String],
-                                       resourcePresetId: Option[String],
-                                       scalePolicy: Option[List[ScalePolicy]],
-                                       status: Option[String],
-                                       storageConfig: Option[List[StorageConfig]],
-                                       subnetIds: Option[Set[Option[String]]],
-                                       tlsEnabled: Option[Boolean],
-                                       ydbApiEndpoint: Option[String],
-                                       ydbFullEndpoint: Option[String]
-                                     )
-
-case class YandexYdbDatabaseDedicated(
-                                       assignPublicIps: Option[Boolean],
-                                       createdAt: Option[String],
-                                       databasePath: Option[String],
-                                       deletionProtection: Option[Boolean],
-                                       description: Option[String],
-                                       folderId: Option[String],
-                                       labels: Option[Map[String, Option[String]]],
-                                       location: Option[List[Location]],
+                                       location: Option[List[Location3]],
                                        locationId: Option[String],
                                        name: String,
                                        networkId: String,
                                        resourcePresetId: String,
-                                       scalePolicy: List[ScalePolicy],
+                                       scalePolicy: List[ScalePolicy2],
                                        status: Option[String],
                                        storageConfig: List[StorageConfig],
                                        subnetIds: Set[Option[String]],
@@ -5589,24 +3919,6 @@ case class YandexYdbDatabaseIamBinding(
                                         members: Set[Option[String]],
                                         role: String,
                                         sleepAfter: Option[Int]
-                                      )
-
-case class YandexYdbDatabaseServerless(
-                                        createdAt: Option[String],
-                                        databaseId: Option[String],
-                                        databasePath: Option[String],
-                                        deletionProtection: Option[Boolean],
-                                        description: Option[String],
-                                        documentApiEndpoint: Option[String],
-                                        folderId: Option[String],
-                                        labels: Option[Map[String, Option[String]]],
-                                        locationId: Option[String],
-                                        name: Option[String],
-                                        serverlessDatabase: Option[Set[ServerlessDatabase]],
-                                        status: Option[String],
-                                        tlsEnabled: Option[Boolean],
-                                        ydbApiEndpoint: Option[String],
-                                        ydbFullEndpoint: Option[String]
                                       )
 
 case class YandexYdbDatabaseServerless(
@@ -5647,14 +3959,10 @@ case class Zonal(
                   zone: Option[String]
                 )
 
-case class Zonal(
-                  zone: Option[String]
-                )
-
-case class Zone(
-                 id: Option[String]
-               )
-
 case class Zookeeper(
-                      resources: Option[List[Resources]]
+                      resources: Option[List[Resources5]]
                     )
+
+case class Zookeeper1(
+                       resources: Option[List[Resources11]]
+                     )
