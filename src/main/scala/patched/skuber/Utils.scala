@@ -1,4 +1,4 @@
-package skuber
+package patched.skuber
 
 import java.time.Duration
 import scala.util.Try

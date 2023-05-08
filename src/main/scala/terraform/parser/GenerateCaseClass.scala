@@ -50,7 +50,7 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
   val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
     val fieldType = generateSchemaField((field._1, field._2), context)
-    s"    $fieldName: $fieldType"
+    s"  $fieldName: $fieldType"
   }.mkString(",\n")
 
   val classDef = s"case class $className(\n$fields\n)"
@@ -61,11 +61,11 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
     case None =>
       val companionObject = s"""
                                |object $className {
-                               |  $classDef
                                |}
       """.stripMargin
 
       context.generatedClasses += companionObject
+      context.generatedClasses += classDef
       context.knownTypes += (className -> classDef)
 
       // Add implicit conversions between classes with the same fields
@@ -110,7 +110,7 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig): String = {
 
   generateResourceClass(("Provider", TerraformResource("", "", providerConfig.Schema)), context)
 
-  val generatedClasses = context.generatedClasses.toSeq.sorted.mkString("\n\n")
+  val generatedClasses = context.generatedClasses.mkString("\n\n")
 
   s"""
      |// Generated Case Classes

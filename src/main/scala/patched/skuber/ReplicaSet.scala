@@ -1,9 +1,9 @@
-package skuber
+package patched.skuber
 
 import play.api.libs.json.{Format, JsPath}
+import skuber.{ResourceDefinition, ResourceSpecification}
 import skuber.apps.v1.ReplicaSet.{Spec, Status}
 import skuber.apps.v1.{ReplicaSet, ReplicaSetList}
-import skuber.json.format.ListResourceFormat
 import skuber.json.format.*
 
 implicit lazy val depFormat: Format[ReplicaSet] = (objFormat and

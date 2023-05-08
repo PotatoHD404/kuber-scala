@@ -2,7 +2,18 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 libraryDependencies += "io.github.hagay3" %% "skuber" % "3.0.6"
 
-libraryDependencies += "io.spray" %%  "spray-json" % "1.3.6"
+libraryDependencies ++= Seq(
+  "org.typelevel" %% "cats-core" % "2.9.0",
+  "org.typelevel" %% "cats-effect" % "3.4.8"
+)
+
+
+
+libraryDependencies += "co.fs2" %% "fs2-core" % "3.6.1"
+
+
+
+//scalacOptions += "-Xmax-inlines 64" // or a higher value if necessary
 
 libraryDependencies ++= Seq(
   "io.circe" %% "circe-core" % "0.14.5",

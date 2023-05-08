@@ -1,4 +1,4 @@
-package skuber.custom
+package patched.skuber.custom
 
 import skuber.objResourceToRef
 import skuber.{Event, NamespaceList, Node, Pod}

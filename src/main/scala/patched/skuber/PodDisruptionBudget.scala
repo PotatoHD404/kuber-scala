@@ -1,4 +1,4 @@
-package skuber
+package patched.skuber
 
 import skuber.ResourceSpecification.{Names, Scope}
 import skuber.{IntOrString, LabelSelector, ListResource, NonCoreResourceSpecification, ObjectMeta, ObjectResource, ResourceDefinition, Timestamp}
