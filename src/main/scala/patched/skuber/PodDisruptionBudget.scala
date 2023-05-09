@@ -4,14 +4,13 @@ import skuber.ResourceSpecification.{Names, Scope}
 import skuber.{IntOrString, LabelSelector, ListResource, NonCoreResourceSpecification, ObjectMeta, ObjectResource, ResourceDefinition, Timestamp}
 
 
-
 case class PodDisruptionBudget(override val kind: String = "skuber.PodDisruptionBudget",
                                override val apiVersion: String = policyAPIVersion,
                                metadata: ObjectMeta,
                                spec: Option[PodDisruptionBudget.Spec] = None,
                                status: Option[PodDisruptionBudget.Status] = None) extends ObjectResource {
 
-  private lazy val copySpec: PodDisruptionBudget.Spec = this.spec.getOrElse(PodDisruptionBudget.Spec(selector=Some(LabelSelector())))
+  private lazy val copySpec: PodDisruptionBudget.Spec = this.spec.getOrElse(PodDisruptionBudget.Spec(selector = Some(LabelSelector())))
 
   def withLabelSelector(sel: LabelSelector): PodDisruptionBudget = {
     this.copy(spec = Some(copySpec.copy(selector = Some(sel))))
@@ -66,11 +65,11 @@ object PodDisruptionBudget {
     (JsPath \ "disruptedPods").formatMaybeEmptyMap[Timestamp] and
     (JsPath \ "disruptionsAllowed").formatMaybeEmptyInt() and
     (JsPath \ "expectedPods").formatMaybeEmptyInt() and
-    (JsPath \ "observedGeneration").formatNullable[Int]) (Status.apply, s => (s.currentHealthy, s.desiredHealthy, s.disruptedPods, s.disruptionsAllowed, s.expectedPods, s.observedGeneration))
+    (JsPath \ "observedGeneration").formatNullable[Int])(Status.apply, s => (s.currentHealthy, s.desiredHealthy, s.disruptedPods, s.disruptionsAllowed, s.expectedPods, s.observedGeneration))
 
   implicit val depSpecFmt: Format[Spec] = ((JsPath \ "maxUnavailable").formatNullable[IntOrString] and
     (JsPath \ "minAvailable").formatNullable[IntOrString] and
-    (JsPath \ "selector").formatNullableLabelSelector) (Spec.apply, s => (s.maxUnavailable, s.minAvailable, s.selector))
+    (JsPath \ "selector").formatNullableLabelSelector)(Spec.apply, s => (s.maxUnavailable, s.minAvailable, s.selector))
 
   implicit lazy val pdbFormat: Format[PodDisruptionBudget] = (objFormat and
     (JsPath \ "spec").formatNullable[Spec] and

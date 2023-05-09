@@ -10,7 +10,9 @@
 //type AzureRM = AzureRMObj.type
 
 sealed trait ProviderType
+
 sealed trait AWS extends ProviderType
+
 sealed trait AzureRM extends ProviderType
 
 abstract class TerraformResource[T <: ProviderType] {
@@ -24,7 +26,7 @@ trait TerraformResourceHCL[A <: InfrastructureResource[_]] {
 }
 
 object TerraformResourceHCL {
-  def apply[T <: InfrastructureResource[_]] (implicit hcl: TerraformResourceHCL[T]): TerraformResourceHCL[T] = hcl
+  def apply[T <: InfrastructureResource[_]](implicit hcl: TerraformResourceHCL[T]): TerraformResourceHCL[T] = hcl
 }
 
 implicit object AWSNetworkHCL extends TerraformResourceHCL[Network[AWS]] {
@@ -101,7 +103,7 @@ case class VM[T <: ProviderType](name: String, network: Network[T])(implicit hcl
 
 case class TerraformConfig[T <: ProviderType](resources: List[InfrastructureResource[T]]) {
   def toHCL: String = {
-//    val allResources = credentials :: backend.toList ++ resources
+    //    val allResources = credentials :: backend.toList ++ resources
     resources.map(_.toHCL).mkString("\n\n")
   }
 }
@@ -115,10 +117,10 @@ def main(): Unit = {
   val azureVM = VM[AzureRM]("my-azurerm-vm", azureNetwork)
 
   val awsConfig = TerraformConfig[AWS](List(awsNetwork, awsVM))
-//  val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
-// Found:    (awsVM : VM[AWS])
-// Required: InfrastructureResource[AzureRM]
-//   val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
+  //  val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
+  // Found:    (awsVM : VM[AWS])
+  // Required: InfrastructureResource[AzureRM]
+  //   val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
 
   val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM))
   println(awsConfig.toHCL)

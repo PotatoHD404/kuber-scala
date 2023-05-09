@@ -11,6 +11,7 @@ object A {
 
   }
 }
+
 @main
 def main(): Unit = {
   val b = A.B()

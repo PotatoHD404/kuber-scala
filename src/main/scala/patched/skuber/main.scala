@@ -9,6 +9,8 @@ import skuber.api.client.KubernetesClient
 import skuber.json.format.*
 import skuber.{EventList, NamespaceList, NodeList, PodList, k8sInit, toList}
 
+import patched.skuber.Conversions.toIO
+
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 
@@ -26,10 +28,10 @@ def main(): Unit = {
     val gracePeriod = 30 // Adjust the grace period as needed
 
     for {
-      nodes <- IO.fromFuture(IO(k8s.list[NodeList]()))
-      namespaces <- IO.fromFuture(IO(k8s.list[NamespaceList]()))
-      pods <- namespaces.items.traverse(ns => IO.fromFuture(IO(k8s.list[PodList](Some(ns.name))))).map(_.flatten)
-      events <- IO.fromFuture(IO(k8s.list[EventList]()))
+      nodes <- k8s.list[NodeList]().toIO
+      namespaces <- k8s.list[NamespaceList]().toIO
+      pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
+      events <- k8s.list[EventList]().toIO
       info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
 
       // Cordon the node

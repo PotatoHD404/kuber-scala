@@ -59,9 +59,10 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
     case Some(existingClassName) =>
       existingClassName
     case None =>
-      val companionObject = s"""
-                               |object $className {
-                               |}
+      val companionObject =
+        s"""
+           |object $className {
+           |}
       """.stripMargin
 
       context.generatedClasses += companionObject

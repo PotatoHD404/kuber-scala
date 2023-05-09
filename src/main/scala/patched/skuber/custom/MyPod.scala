@@ -20,6 +20,7 @@ case class AllocatedResources(cpuRequests: BigDecimal,
 case class ContainerStates(id: String)
 
 case class PodConditions(conditionType: String, status: Boolean)
+
 case class MyPod(ip: Option[String],
                  name: String,
                  status: Option[String],

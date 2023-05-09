@@ -11,7 +11,7 @@ import skuber.LabelSelector.dsl.{reqToSel, strToReq}
 import skuber.Pod.Affinity.NodeSelectorOperator
 import skuber.Pod.Phase
 import skuber.api.client.EventType.EventType
-import skuber.api.client.{EventType, KubernetesClient}
+import skuber.api.client.{EventType, KubernetesClient, LoggingConfig, LoggingContext}
 import skuber.apps.v1.*
 import skuber.autoscaling.v2beta1.{HorizontalPodAutoscaler, HorizontalPodAutoscalerList}
 import skuber.json.format.*
@@ -24,8 +24,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future, TimeoutException}
 import scala.concurrent.duration.*
 import patched.skuber.Conversions.*
-
-import scala.language.implicitConversions
+import play.api.libs.json.Format
 
 
 def cordonNode(nodeName: String)(implicit k8s: KubernetesClient): IO[Node] = {
@@ -137,24 +136,17 @@ def increaseReplicas[T <: ObjectResource](resource: T, increment: Int): T = {
   }
 }
 
-object Conversions {
-//  given fromFutureToIO[T]: Conversion[Future[T], IO[T]] with {
-//    def apply(future: Future[T]): IO[T] = IO.fromFuture(IO(future))
-//  }
-  implicit def fromFutureToIO[T](future: Future[T]): IO[T] = IO.fromFuture(IO(future))
-}
-
 
 def getResources(implicit k8s: KubernetesClient): IO[(StatefulSetList, DeploymentList, ReplicaSetList)] = {
   (
-    k8s.list[StatefulSetList](),
-    k8s.list[DeploymentList](),
-    k8s.list[ReplicaSetList]()
+    k8s.list[StatefulSetList]().toIO,
+    k8s.list[DeploymentList]().toIO,
+    k8s.list[ReplicaSetList]().toIO
   ).tupled
 }
 
 def getAutoscaler(namespace: String, deploymentName: String)(implicit k8s: KubernetesClient): IO[Option[HorizontalPodAutoscaler]] = {
-  k8s.getOption[HorizontalPodAutoscaler](deploymentName, Some(namespace))
+  k8s.getOption[HorizontalPodAutoscaler](deploymentName, Some(namespace)).toIO
 }
 
 def disableAutoscaler(namespace: String, deploymentName: String)(implicit k8s: KubernetesClient): IO[Option[HorizontalPodAutoscaler]] = {
@@ -167,12 +159,12 @@ def disableAutoscaler(namespace: String, deploymentName: String)(implicit k8s: K
 }
 
 def enableAutoscaler(hpa: HorizontalPodAutoscaler)(implicit k8s: KubernetesClient): IO[HorizontalPodAutoscaler] = {
-  k8s.create(hpa, Some(hpa.namespace))
+  k8s.create(hpa, Some(hpa.namespace)).toIO
 }
 
 def deletePod(pod: Pod, gracePeriod: Int)(implicit k8s: KubernetesClient): IO[Unit] = {
   val deleteOptions = DeleteOptions(gracePeriodSeconds = Some(gracePeriod))
-  k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace)).void
+  k8s.deleteWithOptions[Pod](pod.name, deleteOptions, Some(pod.namespace)).void.toIO
 }
 
 
@@ -195,99 +187,41 @@ def processResources[T <: ObjectResource](resources: List[T], nodePods: List[Pod
 def drainNodes(nodeNames: List[String], gracePeriod: Int)(implicit k8s: KubernetesClient): IO[Unit] = {
 
   def updateResource[T <: ObjectResource : play.api.libs.json.Format : skuber.ResourceDefinition](resource: T, increment: Int): IO[T] = {
-    k8s.get[T](resource.name, Some(resource.namespace))
-      .flatMap(fetchedResource => k8s.update(increaseReplicas(fetchedResource, -increment)))
+    k8s.get[T](resource.name, Some(resource.namespace)).toIO
+      .flatMap(fetchedResource => k8s.update(increaseReplicas(fetchedResource, -increment)).toIO)
   }
 
-
-  //  def updateResource[T <: ObjectResource](resource: T, increment: Int): IO[T] = {
-  //    for {
-  //      fetchedResource <- IO.fromFuture(IO(k8s.get[T](resource.name, Some(resource.namespace))))
-  //      updatedResource <- IO.fromFuture(IO(k8s.update(increaseReplicas(fetchedResource, -increment))))
-  //    } yield updatedResource
-  //  }
-  //  Stream.eval(IO.fromFuture(IO(k8s.list[PodList]())))
-  //    .map(podList => podList.items.filter(_.spec.exists(el => nodeNames.contains(el.nodeName))))
-  //    .flatMap { nodePods =>
-  //      Stream.eval(getResources).flatMap { case (statefulSets, deployments, replicaSets) =>
-  //        val (updatedDeployments, deploymentsIncrements) = processResources(deployments.items, nodePods)
-  //        val deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
-  //        val (updatedReplicaSets, replicaSetsIncrements) = processResources(replicaSets.items, nodePods, deploymentNames)
-  //        val (updatedStatefulSets, statefulSetsIncrements) = processResources(statefulSets.items, nodePods, deploymentNames)
-
-  //        Stream.eval(IO.fromFuture(IO(k8s.list[HorizontalPodAutoscalerList]())))
-  //          .flatMap { autoscalers =>
-  //            Stream.eval(autoscalers.map(hpa => disableAutoscaler(hpa.metadata.namespace, hpa.metadata.name)).sequence)
-  //              .map(disabledAutoscalers => disabledAutoscalers.filter(_.isDefined).map(_.get))
-  //              .flatMap { filteredDisabledAutoscalers =>
-  //                Stream.eval(updatedStatefulSets.map(ss => IO.fromFuture(IO(k8s.update(ss)))).sequence)
-  //                  .flatMap { updatedStatefulSets =>
-  //                    Stream.eval(updatedDeployments.map(d => IO.fromFuture(IO(k8s.update(d)))).sequence)
-  //                      .flatMap { updatedDeployments =>
-  //                        Stream.eval(updatedReplicaSets.map(rs => IO.fromFuture(IO(k8s.update(rs)))).sequence)
-  //                          .flatMap { updatedReplicaSets =>
-  //                            Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets))
-  //                              .flatMap { _ =>
-  //                                Stream.eval(nodePods.map(pod => deletePod(pod, gracePeriod)).sequence)
-  //                                  .flatMap { _ =>
-  //                                    Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, checkRunning = false))
-  //                                      .flatMap { _ =>
-  //                                        Stream.eval(updatedStatefulSets.zip(statefulSetsIncrements).map((updateResource[StatefulSet] _).tupled).sequence)
-  //                                          .flatMap { updatedStatefulSets =>
-  //                                            Stream.eval(updatedDeployments.zip(deploymentsIncrements).map((updateResource[Deployment] _).tupled).sequence)
-  //                                              .flatMap { updatedDeployments =>
-  //                                                Stream.eval(updatedReplicaSets.zip(replicaSetsIncrements).map((updateResource[ReplicaSet] _).tupled).sequence)
-  //                                                  .flatMap { updatedReplicaSets =>
-  //                                                    Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets))
-  //                                                      .flatMap { _ =>
-  //                                                        Stream.eval(filteredDisabledAutoscalers.map(enableAutoscaler).sequence)
-  //                                                          .map(_ => ())
-  //                                                      }
-  //                                                  }
-  //                                              }
-  //                                          }
-  //                                      }
-  //                                  }
-  //                              }
-  //                          }
-  //                      }
-  //                  }
-  //              }
-  //          }
-  //      }
-  //    }.compile.drain
-
-
   for {
-    podList <- k8s.list[PodList]()
-//    nodePods = podList.items.filter(_.spec.exists(el => nodeNames.contains(el.nodeName)))
-//    (statefulSets, deployments, replicaSets) <- Stream.eval(getResources)
-//
-//    (updatedDeployments, deploymentsIncrements) = processResources(deployments.items, nodePods)
-//    deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
-//    (updatedReplicaSets, replicaSetsIncrements) = processResources(replicaSets.items, nodePods, deploymentNames)
-//    (updatedStatefulSets, statefulSetsIncrements) = processResources(statefulSets.items, nodePods, deploymentNames)
-//
-//    autoscalers <- Stream.eval(k8s.list[HorizontalPodAutoscalerList]())
-//    disabledAutoscalers <- Stream.eval(autoscalers.map(hpa => disableAutoscaler(hpa.metadata.namespace, hpa.metadata.name)).sequence)
-//    filteredDisabledAutoscalers = disabledAutoscalers.filter(_.isDefined).map(_.get)
-//
-//    updatedStatefulSets <- Stream.eval(updatedStatefulSets.map(ss => k8s.update(ss)).sequence)
-//    updatedDeployments <- Stream.eval(updatedDeployments.map(d => k8s.update(d)).sequence)
-//    updatedReplicaSets <- Stream.eval(updatedReplicaSets.map(rs => k8s.update(rs)).sequence)
-//
-//    _ <- Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets))
-//
-//    _ <- Stream.eval(nodePods.map(pod => deletePod(pod, gracePeriod)).sequence)
-//
-//    _ <- Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, checkRunning = false))
-//
-//    updatedStatefulSets <- Stream.eval(updatedStatefulSets.zip(statefulSetsIncrements).map((updateResource[StatefulSet] _).tupled).sequence)
-//    updatedDeployments <- Stream.eval(updatedDeployments.zip(deploymentsIncrements).map((updateResource[Deployment] _).tupled).sequence)
-//    updatedReplicaSets <- Stream.eval(updatedReplicaSets.zip(replicaSetsIncrements).map((updateResource[ReplicaSet] _).tupled).sequence)
-//
-//    _ <- Stream.eval(waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets))
-//
-//    _ <- Stream.eval(filteredDisabledAutoscalers.map(enableAutoscaler).sequence)
+    podList <- k8s.list[PodList]().toIO
+    nodePods = podList.items.filter(_.spec.exists(el => nodeNames.contains(el.nodeName)))
+    resourceLists <- getResources
+    (statefulSets, deployments, replicaSets) = resourceLists
+
+    (updatedDeployments, deploymentsIncrements) = processResources(deployments.items, nodePods)
+    deploymentNames = updatedDeployments.map(el => Some(el.metadata.name))
+    (updatedReplicaSets, replicaSetsIncrements) = processResources(replicaSets.items, nodePods, deploymentNames)
+    (updatedStatefulSets, statefulSetsIncrements) = processResources(statefulSets.items, nodePods, deploymentNames)
+
+    autoscalers <- k8s.list[HorizontalPodAutoscalerList]().toIO
+    disabledAutoscalers <- autoscalers.map(hpa => disableAutoscaler(hpa.metadata.namespace, hpa.metadata.name)).sequence
+    filteredDisabledAutoscalers = disabledAutoscalers.filter(_.isDefined).map(_.get)
+
+    updatedStatefulSets <- updatedStatefulSets.map(ss => k8s.update(ss).toIO).sequence
+    updatedDeployments <- updatedDeployments.map(d => k8s.update(d).toIO).sequence
+    updatedReplicaSets <- updatedReplicaSets.map(rs => k8s.update(rs).toIO).sequence
+
+    _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
+
+    _ <- nodePods.map(pod => deletePod(pod, gracePeriod)).sequence
+
+    _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets, checkRunning = false)
+
+    updatedStatefulSets <- updatedStatefulSets.zip(statefulSetsIncrements).map((updateResource[StatefulSet] _).tupled).sequence
+    updatedDeployments <- updatedDeployments.zip(deploymentsIncrements).map((updateResource[Deployment] _).tupled).sequence
+    updatedReplicaSets <- updatedReplicaSets.zip(replicaSetsIncrements).map((updateResource[ReplicaSet] _).tupled).sequence
+
+    _ <- waitUntilAllPodsVerified(updatedStatefulSets, updatedDeployments, updatedReplicaSets)
+
+    _ <- filteredDisabledAutoscalers.map(enableAutoscaler).sequence
   } yield ()
 }

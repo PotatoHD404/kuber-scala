@@ -1,7 +1,19 @@
 package patched.skuber
 
+import cats.effect.IO
+
 import java.time.Duration
+import scala.concurrent.Future
 import scala.util.Try
+
+object Conversions {
+  //  given fromFutureToIO[T]: Conversion[Future[T], IO[T]] with {
+  //    def apply(future: Future[T]): IO[T] = IO.fromFuture(IO(future))
+  //  }
+  /*implicit*/ def fromFutureToIO[T](future: Future[T]): IO[T] = IO.fromFuture(IO(future))
+  extension [T](future: Future[T])
+    def toIO: IO[T] = IO.fromFuture(IO(future))
+}
 
 def toDuration(value: String): Option[Duration] = {
   if (value.isEmpty) None
