@@ -15,15 +15,33 @@ sealed trait AWS extends ProviderType
 
 sealed trait AzureRM extends ProviderType
 
-abstract class TerraformResource[T <: ProviderType] {
+abstract class TerraformResource {
   def toHCL: String
 }
 
-trait InfrastructureResource[T <: ProviderType] extends TerraformResource[T]
+trait InfrastructureResource[T <: ProviderType] extends TerraformResource
 
-trait TerraformResourceHCL[A <: InfrastructureResource[_]] {
-  def toHCL(resource: A): String
+trait Provider[T <: ProviderType] extends TerraformResource
+
+trait BackendResource extends TerraformResource
+
+trait TerraformResourceHCL[T <: InfrastructureResource[_]] {
+  def toHCL(resource: T): String
 }
+
+case class TerraformConfig[
+  A <: ProviderType,
+  T1 <: Provider[A],
+  T2 <: BackendResource,
+  T3 <: InfrastructureResource[A]
+]
+(provider: T1, backend: Option[T2], resources: List[T3]) {
+  def toHCL: String = {
+    val allResources = provider +: backend.toList ++: resources
+    allResources.map(_.toHCL).mkString("\n\n")
+  }
+}
+
 
 object TerraformResourceHCL {
   def apply[T <: InfrastructureResource[_]](implicit hcl: TerraformResourceHCL[T]): TerraformResourceHCL[T] = hcl
@@ -62,31 +80,7 @@ implicit object AzureRMVMHCL extends TerraformResourceHCL[VM[AzureRM]] {
   def toHCL(vm: VM[AzureRM]): String = {
     s"""resource "azurerm_linux_virtual_machine" "${vm.name}" {
        |  name                  = "${vm.name}"
-       |  location              = "East US"
-       |  resource_group_name   = azurerm_resource_group.example.name
-       |  network_interface_ids = [azurerm_network_interface.example.id]
-       |  size                  = "Standard_B1s"
-       |
-       |  os_disk {
-       |    caching              = "ReadWrite"
-       |    storage_account_type = "Standard_LRS"
-       |  }
-       |
-       |  source_image_reference {
-       |    publisher = "Canonical"
-       |    offer     = "UbuntuServer"
-       |    sku       = "18.04-LTS"
-       |    version   = "latest"
-       |  }
-       |
-       |  computer_name  = "${vm.name}"
-       |  admin_username = "adminuser"
-       |  disable_password_authentication = true
-       |
-       |  admin_ssh_key {
-       |    username   = "adminuser"
-       |    public_key = file("~/.ssh/id_rsa.pub")
-       |  }
+       | ...
        |}""".stripMargin
   }
 }
@@ -100,11 +94,19 @@ case class VM[T <: ProviderType](name: String, network: Network[T])(implicit hcl
   def toHCL: String = hcl.toHCL(this)
 }
 
-
-case class TerraformConfig[T <: ProviderType](resources: List[InfrastructureResource[T]]) {
+case class AWSProvider(name: String, region: String) extends Provider[AWS] {
   def toHCL: String = {
-    //    val allResources = credentials :: backend.toList ++ resources
-    resources.map(_.toHCL).mkString("\n\n")
+    s"""provider "aws" {
+       |  region = "$region"
+       |}""".stripMargin
+  }
+}
+
+case class AzureRMProvider(name: String, region: String) extends Provider[AzureRM] {
+  def toHCL: String = {
+    s"""provider "azurerm" {
+       |  region = "$region"
+       |}""".stripMargin
   }
 }
 
@@ -115,14 +117,17 @@ def main(): Unit = {
   val azureNetwork = Network[AzureRM]("my-azurerm-network", "10.0.0.0/16")
   val awsVM = VM[AWS]("my-aws-vm", awsNetwork)
   val azureVM = VM[AzureRM]("my-azurerm-vm", azureNetwork)
+  val awsProvider = AWSProvider("my-aws-provider", "us-east-1")
+  val azureProvider = AzureRMProvider("my-azurerm-provider", "eastus")
 
-  val awsConfig = TerraformConfig[AWS](List(awsNetwork, awsVM))
+  val awsConfig = TerraformConfig(awsProvider, None, List(awsNetwork, awsVM))
   //  val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
   // Found:    (awsVM : VM[AWS])
   // Required: InfrastructureResource[AzureRM]
   //   val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM, awsVM))
 
-  val azureConfig = TerraformConfig[AzureRM](List(azureNetwork, azureVM))
+  val azureConfig = TerraformConfig(azureProvider, None, List(azureNetwork, azureVM))
+//  val azureConfig1 = TerraformConfig(azureProvider, None, List(azureNetwork, azureVM, awsVM))
   println(awsConfig.toHCL)
   println(azureConfig.toHCL)
 }
