@@ -4,11 +4,11 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import terraform.HCLImplicits._
 
+
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
                         generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
                       )
-
 
 def generateType(field: SchemaField): String = {
   val fieldType = field.Type
@@ -33,30 +33,37 @@ def generateSchemaField(field: (String, SchemaField), context: TypeContext, pack
   val (fieldName, schemaField) = field
   val fieldType = generateType(schemaField)
 
-
   schemaField.Elem match {
     case Some(Left(resource)) =>
-      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, isTopLevel = false)
-
+      val (_, className) = generateResourceClass((fieldName, resource), context, packageName)
       fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
       val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName)
-
       fieldType.replace("T", fieldTypeElem)
     case None => fieldType
   }
 }
-def generateResourceClass(resource: (String, TerraformResource), context: TypeContext, packageName: String, isTopLevel: Boolean = true): (String, String) = {
+
+def generateResourceClass(
+                           resource: (String, TerraformResource),
+                           context: TypeContext,
+                           packageName: String,
+                           classType: String = ""
+                         ): (String, String) = {
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
-  val newPackageName = if (isTopLevel) s"$packageName.${name.toLowerCase}" else packageName
+  val newPackageName = if (classType != "") s"$packageName.${name.toLowerCase}" else packageName
 
-
-  val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
+  val fields = ((
+    classType match {
+    case "resource" => Some(s"  resourceName: String")
+    case "datasource" => Some(s"  datasourceName: String")
+    case _ => None
+  }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
     val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
     s"  $fieldName: $fieldType"
-  }.mkString(",\n")
+  }).mkString(",\n")
 
   @tailrec
   def getUniqueClassName(className: String, count: Int = 0): String = {
@@ -84,16 +91,22 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
       case 7 => s"""    Some(s"$realFieldName = [$${this.$fieldName.map(_.toHCL).mkString(", ")}]")"""
       case _ => throw new IllegalArgumentException(s"Unsupported type code: ${field._2.Type}")
     }
-
   }.mkString(",\n")
 
   val toHCLMethod =
     s"""
-       |  def toHCL: String = "{" +
-       |  List[Option[String]](
+       |  def toHCL: String = "${
+      classType match {
+        case "resource" => s"""resource \\" $name \\" $${this.resourceName}"""
+        case "datasource" => s"""data \\" $name \\" $${this.datasourceName}"""
+        case "provider" => s"""provider \\" $name \\""""
+        case _ => ""
+      }
+    }{" +
+       |    List[Option[String]](
        |$toHCLBody
-       |  ).flatten.mkString("\\n")
-       |  + "}"
+       |    ).flatten.mkString("\\n")
+       |    + "}"
        |""".stripMargin
 
   val classDef = s"case class $uniqueClassName(\n$fields\n){\n$toHCLMethod\n}"
@@ -111,15 +124,23 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
 
 def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String): Map[String, List[(String, String)]] = {
   val context = TypeContext()
+
   providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).foreach { resource =>
-    generateResourceClass(resource, context, s"$globalPrefix.resources", isTopLevel = true)
+    generateResourceClass(resource, context, s"$globalPrefix.resources", classType = "resource")
   }
 
   providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
-    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", isTopLevel = true)
+    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", classType = "datasource")
   }
-  generateResourceClass(("Provider", TerraformResource("", "", providerConfig.Schema)), context, globalPrefix, isTopLevel = true)
 
+  val (_, providerClass) = generateResourceClass(
+    ("Provider", TerraformResource("", "", providerConfig.Schema)),
+    context,
+    globalPrefix,
+    classType = "provider"
+  )
+
+  println(s"provider $globalPrefix {}\n")
 
   context.generatedPackages.foreach {
     case (packageName, classes) =>
@@ -128,6 +149,5 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
       }
   }
 
-
-  context.generatedPackages.view.mapValues(_.toList).toMap
+  context.generatedPackages.view.mapValues(_.toList).toMap + (globalPrefix -> List(("Provider", providerClass)))
 }
