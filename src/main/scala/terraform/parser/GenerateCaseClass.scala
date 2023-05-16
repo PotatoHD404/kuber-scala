@@ -114,6 +114,13 @@ def generateResourceClass(
          |  }
          |}""".stripMargin
 
+    case "" =>
+      s"""case class $uniqueClassName(\n$fields\n) {
+         |  def toHCL: String = {
+         |$toHCLBody
+         |  }
+         |}""".stripMargin
+
     case _ => throw new IllegalArgumentException(s"Unsupported class type: $classType")
   }
 
