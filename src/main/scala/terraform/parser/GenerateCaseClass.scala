@@ -9,7 +9,7 @@ case class TypeContext(
                       )
 
 
-def generateType(field: SchemaField): String = {
+def generateType(field: SchemaField, isTopLevel: Boolean): String = {
   val fieldType = field.Type
   val t = fieldType match {
     case 1 => "Boolean"
@@ -21,23 +21,25 @@ def generateType(field: SchemaField): String = {
     case 7 => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
-  if (!field.Required && field.RequiredWith.isEmpty) {
+  if (!field.Required && field.RequiredWith.isEmpty && isTopLevel) {
     s"Option[$t]"
   } else {
     t
   }
 }
 
-def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String): String = {
+def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, isTopLevel: Boolean): String = {
   val (fieldName, schemaField) = field
-  val fieldType = generateType(schemaField)
+  val fieldType = generateType(schemaField, isTopLevel)
+
+
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
       val (_, className) = generateResourceClass((fieldName, resource), context, packageName, isTopLevel = false)
-      fieldType.replace("T", s"$packageName.$className")
+      fieldType.replace("T", s"$className")
     case Some(Right(schemaFieldElem)) =>
-      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem), context, packageName)
+      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem), context, packageName, isTopLevel = false)
       fieldType.replace("T", fieldTypeElem)
     case None => fieldType
   }
@@ -50,7 +52,7 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
 
   val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, isTopLevel)
     s"  $fieldName: $fieldType"
   }.mkString(",\n")
 
