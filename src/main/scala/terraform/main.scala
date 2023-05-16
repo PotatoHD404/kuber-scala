@@ -19,11 +19,13 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
 
   classes.foreach { case (className, classCode) =>
     val filePath = s"$fullPath/$className.scala"
-    val fullClassCode = s"package $packageName\n\n$classCode"
+    val fullClassCode = s"package $packageName\n\nimport terraform.HCLImplicits._\n\n$classCode"
     Files.write(Paths.get(filePath), fullClassCode.replace("type:", "`type`:")
+      .replace(".type", ".`type`")
       .replace("package:", "`package`:")
       .replace(".package", ".`package`")
-      .replace("class:", "`class`:").getBytes)
+      .replace("class:", "`class`:")
+      .replace(".class", ".`class`").getBytes)
   }
 }
 

@@ -2,6 +2,7 @@ package terraform.parser
 
 import scala.annotation.tailrec
 import scala.collection.mutable
+import terraform.HCLImplicits._
 
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
@@ -9,7 +10,7 @@ case class TypeContext(
                       )
 
 
-def generateType(field: SchemaField, isTopLevel: Boolean): String = {
+def generateType(field: SchemaField): String = {
   val fieldType = field.Type
   val t = fieldType match {
     case 1 => "Boolean"
@@ -21,25 +22,26 @@ def generateType(field: SchemaField, isTopLevel: Boolean): String = {
     case 7 => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
-  if (!field.Required && field.RequiredWith.isEmpty && isTopLevel) {
+  if (!field.Required && field.RequiredWith.isEmpty) {
     s"Option[$t]"
   } else {
     t
   }
 }
 
-def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, isTopLevel: Boolean): String = {
+def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String): String = {
   val (fieldName, schemaField) = field
-  val fieldType = generateType(schemaField, isTopLevel)
-
+  val fieldType = generateType(schemaField)
 
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
       val (_, className) = generateResourceClass((fieldName, resource), context, packageName, isTopLevel = false)
-      fieldType.replace("T", s"$className")
+
+      fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
-      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem), context, packageName, isTopLevel = false)
+      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName)
+
       fieldType.replace("T", fieldTypeElem)
     case None => fieldType
   }
@@ -52,7 +54,7 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
 
   val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, isTopLevel)
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
     s"  $fieldName: $fieldType"
   }.mkString(",\n")
 
@@ -66,7 +68,33 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
   }
 
   val uniqueClassName = getUniqueClassName(className)
-  val classDef = s"case class $uniqueClassName(\n$fields\n)"
+
+  val toHCLBody = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
+    val fieldName = toCamelCase(field._1)
+    val realFieldName = field._1
+    val isOptional = !field._2.Required && field._2.RequiredWith.isEmpty
+
+    field._2.Type match {
+      case 1 | 2 | 3 | 4 if isTopLevel => // Boolean, Int, Double, String at the top level
+        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
+      case 1 | 2 | 3 | 4 => // Boolean, Int, Double, String
+        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
+      case 5 | 6 | 7
+      => // List[T], Map[String, T], Set[T]
+        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
+      case _ => throw new IllegalArgumentException(s"Unsupported type code: ${field._2.Type}")
+    }
+  }.mkString("\n")
+
+  val toHCLMethod =
+    s"""
+       |  def toHCL: String = s\"\"\"{
+       |$toHCLBody
+       |  }\"\"\"
+       |""".stripMargin
+
+  val classDef = s"case class $uniqueClassName(\n$fields\n){\n$toHCLMethod\n}"
+
   val classDefHash = fields.hashCode()
 
   if (!context.knownTypes.contains(s"$newPackageName.$uniqueClassName")) {
@@ -93,7 +121,7 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
   context.generatedPackages.foreach {
     case (packageName, classes) =>
       classes.foreach { case (className, classDef) =>
-        println(s"package $packageName\n\n$classDef")
+        println(s"package $packageName\n\nimport terraform.HCLImplicits._\n\n$classDef")
       }
   }
 
