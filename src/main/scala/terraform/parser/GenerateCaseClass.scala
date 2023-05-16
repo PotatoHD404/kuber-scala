@@ -56,10 +56,10 @@ def generateResourceClass(
 
   val fields = ((
     classType match {
-    case "resource" => Some(s"  resourceName: String")
-    case "datasource" => Some(s"  datasourceName: String")
-    case _ => None
-  }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
+      case "resource" => Some(s"  resourceName: String")
+      case "datasource" => Some(s"  datasourceName: String")
+      case _ => None
+    }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
     val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
     s"  $fieldName: $fieldType"
@@ -93,23 +93,29 @@ def generateResourceClass(
     }
   }.mkString(",\n")
 
-  val toHCLMethod =
-    s"""
-       |  def toHCL: String = "${
-      classType match {
-        case "resource" => s"""resource \\" $name \\" $${this.resourceName}"""
-        case "datasource" => s"""data \\" $name \\" $${this.datasourceName}"""
-        case "provider" => s"""provider \\" $name \\""""
-        case _ => ""
-      }
-    }{" +
-       |    List[Option[String]](
-       |$toHCLBody
-       |    ).flatten.mkString("\\n")
-       |    + "}"
-       |""".stripMargin
+  val classDef = classType match {
+    case "resource" | "datasource" =>
+      s"""case class $uniqueClassName[T <: ProviderType](\n$fields\n) extends InfrastructureResource[T] {
+         |  def toHCL: String = {
+         |$toHCLBody
+         |  }
+         |}""".stripMargin
 
-  val classDef = s"case class $uniqueClassName(\n$fields\n){\n$toHCLMethod\n}"
+    case "provider" =>
+      s"""case class $uniqueClassName[T <: ProviderType](\n$fields\n) extends Provider[T] {
+         |  def toHCL: String = {
+         |$toHCLBody
+         |  }
+         |}""".stripMargin
+    case "backend" =>
+      s"""case class $uniqueClassName(\n$fields\n) extends BackendResource {
+         |  def toHCL: String = {
+         |$toHCLBody
+         |  }
+         |}""".stripMargin
+
+    case _ => throw new IllegalArgumentException(s"Unsupported class type: $classType")
+  }
 
   val classDefHash = fields.hashCode()
 
@@ -140,7 +146,7 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
     classType = "provider"
   )
 
-  println(s"provider $globalPrefix {}\n")
+
 
   context.generatedPackages.foreach {
     case (packageName, classes) =>
