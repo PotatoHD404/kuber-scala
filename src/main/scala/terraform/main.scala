@@ -8,20 +8,23 @@ import java.io.File
 import java.nio.file.{Files, Paths}
 import scala.io.Source
 
-def createClassFile(packageName: String, className: String, classCode: String, basePath: String): Unit = {
+def createClassFile(packageName: String, classes: List[(String, String)], basePath: String): Unit = {
   val packagePath = packageName.replace(".", "/")
   val fullPath = s"$basePath/$packagePath"
-  val filePath = s"$fullPath/$className.scala"
 
   val directory = new File(fullPath)
   if (!directory.exists()) {
     directory.mkdirs()
   }
 
-  Files.write(Paths.get(filePath), classCode.replace("type:", "`type`:")
-    .replace("package:", "`package`:")
-    .replace(".package", ".`package`")
-    .replace("class:", "`class`:").getBytes)
+  classes.foreach { case (className, classCode) =>
+    val filePath = s"$fullPath/$className.scala"
+    val fullClassCode = s"package $packageName\n\n$classCode"
+    Files.write(Paths.get(filePath), fullClassCode.replace("type:", "`type`:")
+      .replace("package:", "`package`:")
+      .replace(".package", ".`package`")
+      .replace("class:", "`class`:").getBytes)
+  }
 }
 
 
@@ -37,11 +40,11 @@ def main(): Unit = {
 
   terraformProviderConfig match {
     case Right(config) =>
-      val generatedClasses = generateCaseClasses(config, "terraform.providers.yandex")
+      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex")
 
       val basePath = "./src/main/scala"
-      generatedClasses.foreach { case (packageName, (className, classCode)) =>
-        createClassFile(packageName, className, classCode, basePath)
+      generatedPackages.foreach { case (packageName, classes) =>
+        createClassFile(packageName, classes, basePath)
       }
     case Left(error) => println(s"Error parsing JSON: $error")
   }
