@@ -73,24 +73,27 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
     val fieldName = toCamelCase(field._1)
     val realFieldName = field._1
     val isOptional = !field._2.Required && field._2.RequiredWith.isEmpty
-
     field._2.Type match {
-      case 1 | 2 | 3 | 4 if isTopLevel => // Boolean, Int, Double, String at the top level
-        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
-      case 1 | 2 | 3 | 4 => // Boolean, Int, Double, String
-        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
-      case 5 | 6 | 7
-      => // List[T], Map[String, T], Set[T]
-        s"""  $realFieldName = $${Option(this.$fieldName).map(_.toHCL).getOrElse("")}"""
+      case 1 | 2 | 3 | 4 if isOptional => s"""    this.$fieldName.map(_.toHCL).map(el => s"$realFieldName = $${el}")"""
+      case 5 if isOptional => s"""    this.$fieldName.map(_.map(_.toHCL).mkString(", ")).map(el => s"$realFieldName = [$${el}]")"""
+      case 6 if isOptional => s"""    this.$fieldName.map(_.mapValues(_.toHCL).mkString(", ")).map(el => s"$realFieldName = {$${el}}")"""
+      case 7 if isOptional => s"""    this.$fieldName.map(_.map(_.toHCL).mkString(", ")).map(el => s"$realFieldName = [$${el}]")"""
+      case 1 | 2 | 3 | 4 => s"""    Some(s"$realFieldName = $${this.$fieldName}")"""
+      case 5 => s"""    Some(s"$realFieldName = [$${this.$fieldName.map(_.toHCL).mkString(", ")}]")"""
+      case 6 => s"""    Some(s"$realFieldName = {$${this.$fieldName.mapValues(_.toHCL).mkString(", ")}}")"""
+      case 7 => s"""    Some(s"$realFieldName = [$${this.$fieldName.map(_.toHCL).mkString(", ")}]")"""
       case _ => throw new IllegalArgumentException(s"Unsupported type code: ${field._2.Type}")
     }
-  }.mkString("\n")
+
+  }.mkString(",\n")
 
   val toHCLMethod =
     s"""
-       |  def toHCL: String = s\"\"\"{
+       |  def toHCL: String = "\\"\\"\\"{" +
+       |  List[Option[String]](
        |$toHCLBody
-       |  }\"\"\"
+       |  ).flatten.mkString("\\n")
+       |  + "}\\"\\"\\""
        |""".stripMargin
 
   val classDef = s"case class $uniqueClassName(\n$fields\n){\n$toHCLMethod\n}"
