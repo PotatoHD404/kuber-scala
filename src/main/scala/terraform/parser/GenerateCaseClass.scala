@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 case class TypeContext(
-                        knownTypes: mutable.Map[String, String] = mutable.Map(),
+                        knownTypes: mutable.Map[String, mutable.Map[String, String]] = mutable.Map(),
                         generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
                       )
 
@@ -51,8 +51,8 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
   @tailrec
   def getUniqueClassName(className: String, count: Int = 0): String = {
     val newClassName = if (count > 0) className + count else className
-    val existingClass = context.knownTypes.get(newClassName)
-    if (existingClass.isEmpty) newClassName
+    val existingClass = context.knownTypes.getOrElseUpdate(newPackageName, mutable.Map()).contains(newClassName)
+    if (!existingClass) newClassName
     else getUniqueClassName(className, count + 1)
   }
 
@@ -72,13 +72,13 @@ def generateResourceClass(resource: (String, TerraformResource), context: TypeCo
   val uniqueClassName = getUniqueClassName(className)
   val classDef = s"case class $uniqueClassName(\n$fields\n)"
 
-  if (!context.generatedPackages.contains(newPackageName)) {
-    context.generatedPackages += (newPackageName -> mutable.ListBuffer((uniqueClassName, classDef)))
-  } else {
-    context.generatedPackages(newPackageName) += ((uniqueClassName, classDef))
-  }
+  val packageClasses = context.generatedPackages.getOrElseUpdate(newPackageName, mutable.ListBuffer())
+  val packageDefinitions = context.knownTypes(newPackageName)
 
-  context.knownTypes += (uniqueClassName -> s"$newPackageName.$uniqueClassName")
+  if (!packageDefinitions.values.exists(_ == classDef)) {
+    packageClasses += ((uniqueClassName, classDef))
+    packageDefinitions += (uniqueClassName -> classDef)
+  }
 
   (newPackageName, uniqueClassName)
 }
