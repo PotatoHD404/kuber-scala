@@ -4,7 +4,7 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 
 case class TypeContext(
-                        knownTypes: mutable.Map[String, mutable.Map[String, String]] = mutable.Map(),
+                        knownTypes: mutable.Map[String, Int] = mutable.Map(),
                         generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
                       )
 
@@ -42,42 +42,35 @@ def generateSchemaField(field: (String, SchemaField), context: TypeContext, pack
     case None => fieldType
   }
 }
-
 def generateResourceClass(resource: (String, TerraformResource), context: TypeContext, packageName: String, isTopLevel: Boolean = true): (String, String) = {
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
   val newPackageName = if (isTopLevel) s"$packageName.${name.toLowerCase}" else packageName
 
-  @tailrec
-  def getUniqueClassName(className: String, count: Int = 0): String = {
-    val newClassName = if (count > 0) className + count else className
-    val existingClass = context.knownTypes.getOrElseUpdate(newPackageName, mutable.Map()).contains(newClassName)
-    if (!existingClass) newClassName
-    else getUniqueClassName(className, count + 1)
-  }
 
   val fields = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
     val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
-
-    if (fieldName.toLowerCase.endsWith("id")) s"  $fieldName: $fieldType /* TODO: add correct ID type */"
-    else if (fieldName.toLowerCase.endsWith("ids")) s"  $fieldName: $fieldType /* TODO: add correct IDs type */"
-    else if (fieldName.toLowerCase.endsWith("arn")) s"  $fieldName: $fieldType /* TODO: add correct ARN type */"
-    else if (fieldName.toLowerCase.endsWith("arns")) s"  $fieldName: $fieldType /* TODO: add correct ARNs type */"
-    else if (fieldName.toLowerCase.endsWith("policy")) s"  $fieldName: $fieldType /* TODO: add correct Policy type */"
-    else
-      s"  $fieldName: $fieldType"
+    s"  $fieldName: $fieldType"
   }.mkString(",\n")
+
+  @tailrec
+  def getUniqueClassName(className: String, count: Int = 0): String = {
+    val newClassName = if (count > 0) className + count else className
+    val existingClass = context.knownTypes.contains(s"$newPackageName.$newClassName")
+    if (!existingClass) newClassName
+    else if (context.knownTypes(s"$newPackageName.$newClassName") == fields.hashCode()) newClassName
+    else getUniqueClassName(className, count + 1)
+  }
 
   val uniqueClassName = getUniqueClassName(className)
   val classDef = s"case class $uniqueClassName(\n$fields\n)"
+  val classDefHash = fields.hashCode()
 
-  val packageClasses = context.generatedPackages.getOrElseUpdate(newPackageName, mutable.ListBuffer())
-  val packageDefinitions = context.knownTypes(newPackageName)
-
-  if (!packageDefinitions.values.exists(_ == classDef)) {
+  if (!context.knownTypes.contains(s"$newPackageName.$uniqueClassName")) {
+    context.knownTypes += (s"$newPackageName.$uniqueClassName" -> classDefHash)
+    val packageClasses = context.generatedPackages.getOrElseUpdate(newPackageName, mutable.ListBuffer())
     packageClasses += ((uniqueClassName, classDef))
-    packageDefinitions += (uniqueClassName -> classDef)
   }
 
   (newPackageName, uniqueClassName)
