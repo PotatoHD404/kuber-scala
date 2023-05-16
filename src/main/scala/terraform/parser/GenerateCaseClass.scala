@@ -88,8 +88,13 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
   providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
     generateResourceClass(dataSource, context, s"$globalPrefix.datasources")
   }
-
   generateResourceClass(("Provider", TerraformResource("", "", providerConfig.Schema)), context, globalPrefix)
+
+
+  context.generatedPackages.foreach {
+    case (packageName, (className, classDef)) =>
+      println(s"package $packageName\n\n$classDef")
+  }
 
   context.generatedPackages.toMap
 }
