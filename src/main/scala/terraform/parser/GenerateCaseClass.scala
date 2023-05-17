@@ -4,6 +4,9 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import terraform.HCLImplicits._
 
+// Add string wraps
+// opaque types
+// newType
 
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
