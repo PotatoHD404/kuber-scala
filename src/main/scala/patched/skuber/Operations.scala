@@ -15,7 +15,6 @@ import skuber.api.client.{EventType, KubernetesClient, LoggingConfig, LoggingCon
 import skuber.apps.v1.*
 import skuber.autoscaling.v2beta1.{HorizontalPodAutoscaler, HorizontalPodAutoscalerList}
 import skuber.json.format.*
-import terraform.A.B
 
 import java.time.{Duration, ZonedDateTime}
 import java.util.Optional

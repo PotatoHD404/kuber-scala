@@ -95,11 +95,11 @@ def generateResourceClass(
 
   val toHCLMethod =
     s"""
-       |  def toHCL: String = "${
+       |  def toHCL: String = s"${
       classType match {
-        case "resource" => s"""resource \\" $name \\" $${this.resourceName}"""
-        case "datasource" => s"""data \\" $name \\" $${this.datasourceName}"""
-        case "provider" => s"""provider \\" $name \\""""
+        case "resource" => s"""resource \\"$name\\" \\"$${this.resourceName}\\""""
+        case "datasource" => s"""data \\"$name\\" \\"$${this.datasourceName}\\""""
+        case "provider" => s"""provider \\"$name\\""""
         case _ => ""
       }
     }{" +
