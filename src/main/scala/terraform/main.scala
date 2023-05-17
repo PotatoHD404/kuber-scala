@@ -18,15 +18,9 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
     directory.mkdirs()
   }
 
-  classes.filter(_._2.contains("class")).foreach { case (className, classCode) =>
+  classes.foreach { case (className, classCode) =>
     val filePath = s"$fullPath/$className.scala"
-    val fullClassCode = s"package $packageName\n\nimport terraform.HCLImplicits._\n\n$classCode"
-    Files.write(Paths.get(filePath), fullClassCode.replace("type:", "`type`:")
-      .replace(".type", ".`type`")
-      .replace("package:", "`package`:")
-      .replace(".package", ".`package`")
-      .replace("class:", "`class`:")
-      .replace(".class", ".`class`").getBytes)
+    Files.write(Paths.get(filePath), classCode.getBytes)
   }
 }
 
@@ -43,7 +37,7 @@ def main(): Unit = {
 
   terraformProviderConfig match {
     case Right(config) =>
-      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex")
+      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex", "Yandex")
 
       val basePath = "./src/main/scala"
       generatedPackages.foreach { case (packageName, classes) =>

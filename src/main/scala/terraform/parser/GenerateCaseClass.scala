@@ -32,16 +32,16 @@ def generateType(field: SchemaField): String = {
   }
 }
 
-def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String): String = {
+def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, providerName: String): String = {
   val (fieldName, schemaField) = field
   val fieldType = generateType(schemaField)
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
-      val (_, className) = generateResourceClass((fieldName, resource), context, packageName)
+      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName)
       fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
-      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName)
+      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName)
       fieldType.replace("T", fieldTypeElem)
     case None => fieldType
   }
@@ -51,7 +51,8 @@ def generateResourceClass(
                            resource: (String, TerraformResource),
                            context: TypeContext,
                            packageName: String,
-                           classType: String = ""
+                           classType: String,
+                           providerName: String
                          ): (String, String) = {
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
@@ -64,7 +65,7 @@ def generateResourceClass(
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName)
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
 
@@ -113,30 +114,22 @@ def generateResourceClass(
        |""".stripMargin
   val classDef = classType match {
     case "resource" | "datasource" =>
-      s"""case class $uniqueClassName[T <: ProviderType](\n$fields\n) extends InfrastructureResource[T] {
-         |  def toHCL: String = {
-         |$toHCLBody
-         |  }
+      s"""case class $uniqueClassName(\n$fields\n) extends InfrastructureResource[$providerName] {
+         |$toHCLMethod
          |}""".stripMargin
 
     case "provider" =>
-      s"""case class $uniqueClassName[T <: ProviderType](\n$fields\n) extends Provider[T] {
-         |  def toHCL: String = {
-         |$toHCLBody
-         |  }
+      s"""case class $uniqueClassName(\n$fields\n) extends ProviderSettings[$providerName] {
+         |$toHCLMethod
          |}""".stripMargin
     case "backend" =>
       s"""case class $uniqueClassName(\n$fields\n) extends BackendResource {
-         |  def toHCL: String = {
-         |$toHCLBody
-         |  }
+         |$toHCLMethod
          |}""".stripMargin
 
     case "" =>
       s"""case class $uniqueClassName(\n$fields\n) {
-         |  def toHCL: String = {
-         |$toHCLBody
-         |  }
+         |$toHCLMethod
          |}""".stripMargin
 
     case _ => throw new IllegalArgumentException(s"Unsupported class type: $classType")
@@ -153,32 +146,59 @@ def generateResourceClass(
   (newPackageName, uniqueClassName)
 }
 
-def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String): Map[String, List[(String, String)]] = {
+def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String): Map[String, List[(String, String)]] = {
   val context = TypeContext()
 
   providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).foreach { resource =>
-    generateResourceClass(resource, context, s"$globalPrefix.resources", classType = "resource")
+    generateResourceClass(resource, context, s"$globalPrefix.resources", "resource", providerName)
   }
 
   providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
-    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", classType = "datasource")
+    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", "datasource", providerName)
   }
 
-  val (_, providerClass) = generateResourceClass(
-    ("Provider", TerraformResource("", "", providerConfig.Schema)),
+  generateResourceClass(
+    (s"${providerName}ProviderSettings", TerraformResource("", "", providerConfig.Schema)),
     context,
     globalPrefix,
-    classType = "provider"
+    "provider",
+    providerName
   )
 
 
 
-  context.generatedPackages.foreach {
+  context.generatedPackages.map {
     case (packageName, classes) =>
-      classes.foreach { case (className, classDef) =>
-        println(s"package $packageName\n\nimport terraform.HCLImplicits._\n\n$classDef")
+      packageName -> classes.map { case (className, classDef) =>
+        (className, s"""package $packageName
+        |
+        |import terraform.HCLImplicits._
+        |import $globalPrefix._
+        |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource}
+        |
+        |$classDef"""
+          .stripMargin
+          .replace("type:", "`type`:")
+          .replace(".type", ".`type`")
+          .replace("package:", "`package`:")
+          .replace(".package", ".`package`")
+          .replace("class:", "`class`:")
+          .replace(".class", ".`class`"))
       }
-  }
-
-  context.generatedPackages.view.mapValues(_.toList).toMap + (globalPrefix -> List(("Provider", providerClass)))
+  }.view.mapValues(_.toList).toMap +  (globalPrefix -> List((providerName,
+    s"""package $globalPrefix
+       |
+       |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource, ProviderConfig}
+       |
+       |sealed trait $providerName extends ProviderType
+       |
+       |class ${providerName}ProviderConfig[
+       |  T1 <: ProviderSettings[$providerName],
+       |  T2 <: BackendResource,
+       |  T3 <: InfrastructureResource[$providerName]
+       |  ](provider: T1, backend: Option[T2], resources: List[T3]) extends ProviderConfig[
+       |  $providerName,
+       |  T1,
+       |  T2,
+       |  T3](provider, backend, resources)""".stripMargin)))
 }

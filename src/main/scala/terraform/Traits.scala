@@ -1,6 +1,6 @@
 package terraform
 
-sealed trait ProviderType
+trait ProviderType
 
 abstract class TerraformResource {
   def toHCL: String
@@ -8,7 +8,7 @@ abstract class TerraformResource {
 
 trait InfrastructureResource[T <: ProviderType] extends TerraformResource
 
-trait Provider[T <: ProviderType] extends TerraformResource
+trait ProviderSettings[T <: ProviderType] extends TerraformResource
 
 trait BackendResource extends TerraformResource
 
@@ -28,9 +28,9 @@ trait BackendResource extends TerraformResource
 //  def toHCL: String = hcl.toHCL(this)
 //}
 
-case class TerraformConfig[
+case class ProviderConfig[
   A <: ProviderType,
-  T1 <: Provider[A],
+  T1 <: ProviderSettings[A],
   T2 <: BackendResource,
   T3 <: InfrastructureResource[A]
 ]
