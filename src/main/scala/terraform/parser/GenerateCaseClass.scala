@@ -96,6 +96,21 @@ def generateResourceClass(
     }
   }.mkString(",\n")
 
+  val toHCLMethod =
+    s"""
+       |  def toHCL: String = s"${
+      classType match {
+        case "resource" => s"""resource \\"$name\\" \\"$${this.resourceName}\\""""
+        case "datasource" => s"""data \\"$name\\" \\"$${this.datasourceName}\\""""
+        case "provider" => s"""provider \\"$name\\""""
+        case _ => ""
+      }
+    }{" +
+       |    List[Option[String]](
+       |$toHCLBody
+       |    ).flatten.mkString("\\n")
+       |    + "}"
+       |""".stripMargin
   val classDef = classType match {
     case "resource" | "datasource" =>
       s"""case class $uniqueClassName[T <: ProviderType](\n$fields\n) extends InfrastructureResource[T] {

@@ -18,7 +18,7 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
     directory.mkdirs()
   }
 
-  classes.filterNot((el1, _) => "Provider" == el1).foreach { case (className, classCode) =>
+  classes.filter(_._2.contains("class")).foreach { case (className, classCode) =>
     val filePath = s"$fullPath/$className.scala"
     val fullClassCode = s"package $packageName\n\nimport terraform.HCLImplicits._\n\n$classCode"
     Files.write(Paths.get(filePath), fullClassCode.replace("type:", "`type`:")
