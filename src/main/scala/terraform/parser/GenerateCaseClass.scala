@@ -4,16 +4,17 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import terraform.HCLImplicits._
 
-// Add string wraps
-// opaque types
-// newType
+val resourceReferences: Map[String, String] = Map(
+  "yandex_vpc_subnet.network_id" -> "yandex_vpc_network.id"
+  // Add more mappings here as needed...
+)
 
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
                         generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
                       )
 
-def generateType(field: SchemaField): String = {
+def generateType(field: SchemaField, fieldName: String): String = {
   val fieldType = field.Type
   val t = fieldType match {
     case 1 => "Boolean"
@@ -25,16 +26,18 @@ def generateType(field: SchemaField): String = {
     case 7 => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
+  val mappedType = resourceReferences.getOrElse(fieldName, t)
+
   if (!field.Required && field.RequiredWith.isEmpty) {
-    s"Option[$t]"
+    s"Option[$mappedType]"
   } else {
-    t
+    mappedType
   }
 }
 
 def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, providerName: String): String = {
   val (fieldName, schemaField) = field
-  val fieldType = generateType(schemaField)
+  val fieldType = generateType(schemaField, s"$packageName.$fieldName")
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
@@ -65,7 +68,7 @@ def generateResourceClass(
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName)
+    val fieldType = generateSchemaField((s"$packageName.$fieldName", field._2), context, newPackageName, providerName)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
 
