@@ -1,3 +1,6 @@
 [submodule "terraform-to-json"]
 	path = terraform-to-json
 	url = https://github.com/PotatoHD404/terraform-to-json
+[submodule "terraform-docs-extractor"]
+	path = terraform-docs-extractor
+	url = https://github.com/PotatoHD404/terraform-docs-extractor
