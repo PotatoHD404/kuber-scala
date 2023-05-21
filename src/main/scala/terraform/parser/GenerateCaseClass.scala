@@ -72,6 +72,26 @@ def generateResourceClass(
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
 
+  val paramsComment = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
+    val fieldName = toCamelCase(field._1)
+    val fieldComment = if (field._2.Deprecated.nonEmpty) {
+      s"@param $fieldName DEPRECATED: ${field._2.Deprecated}"
+    } else if (field._2.Description.nonEmpty) {
+      s"@param $fieldName ${field._2.Description}"
+    } else {
+      s"@param $fieldName"
+    }
+    fieldComment
+  }.mkString("\n * ")
+
+  val classComment = if (resourceData.DeprecationMessage.nonEmpty) {
+    s"/** ${resourceData.Description}\n *\n * @deprecated ${resourceData.DeprecationMessage}\n * $paramsComment\n */"
+  } else if (resourceData.Description.nonEmpty) {
+    s"/** ${resourceData.Description}\n * $paramsComment\n */"
+  } else {
+    s"/** $paramsComment */"
+  }
+
   @tailrec
   def getUniqueClassName(className: String, count: Int = 0): String = {
     val newClassName = if (count > 0) className + count else className
@@ -169,26 +189,26 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
   )
 
 
-
   context.generatedPackages.map {
     case (packageName, classes) =>
       packageName -> classes.map { case (className, classDef) =>
-        (className, s"""package $packageName
-        |
-        |import terraform.HCLImplicits._
-        |import $globalPrefix._
-        |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource}
-        |
-        |$classDef"""
-          .stripMargin
-          .replace("type:", "`type`:")
-          .replace(".type", ".`type`")
-          .replace("package:", "`package`:")
-          .replace(".package", ".`package`")
-          .replace("class:", "`class`:")
-          .replace(".class", ".`class`"))
+        (className,
+          s"""package $packageName
+             |
+             |import terraform.HCLImplicits._
+             |import $globalPrefix._
+             |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource}
+             |
+             |$classDef"""
+            .stripMargin
+            .replace("type:", "`type`:")
+            .replace(".type", ".`type`")
+            .replace("package:", "`package`:")
+            .replace(".package", ".`package`")
+            .replace("class:", "`class`:")
+            .replace(".class", ".`class`"))
       }
-  }.view.mapValues(_.toList).toMap +  (globalPrefix -> List((providerName,
+  }.view.mapValues(_.toList).toMap + (globalPrefix -> List((providerName,
     s"""package $globalPrefix
        |
        |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource, ProviderConfig}
