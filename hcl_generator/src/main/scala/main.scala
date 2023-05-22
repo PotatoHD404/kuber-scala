@@ -25,7 +25,7 @@ implicit val decodeJson: Decoder[JsonValue] = List[Decoder[JsonValue]](
 
 type JsonMap = Map[String, List[JsonValue]]
 
-case class FilteredJson(domains: List[String], ips: List[String], ipMasks: List[String], jsonStrings: List[(String, String)], fieldLinks: List[String])
+case class FilteredJson(domains: List[(String, String)], ips: List[(String, String)], ipMasks: List[(String, String)], jsonStrings: List[(String, String, String)], fieldLinks: List[(String, String)])
 
 def decodeAndFilterJson(jsonString: String): FilteredJson = {
 
@@ -37,7 +37,7 @@ def decodeAndFilterJson(jsonString: String): FilteredJson = {
 
   // Define the pattern
   val fieldPattern: Regex = """^(:?data\.)?yandex_[\w._-]+\.[\w._-]+\.[\w._-]+$""".r
-  val domainPattern: Regex = """^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z]|[A-Za-z][A-Za-z0-9\-]*[A-Za-z0-9])$""".r
+  val domainPattern: Regex = """^(?:[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z0-9][a-zA-Z0-9\-]{0,61}[a-zA-Z0-9]\.(ru|com|org|net)$""".r
   val ipPattern: Regex = """^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$""".r
   val ipMaskPattern: Regex = """^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)/([0-9]|[1-2][0-9]|3[0-2])$""".r
 
@@ -80,22 +80,22 @@ def decodeAndFilterJson(jsonString: String): FilteredJson = {
     }.toList
   }
 
-  val domainValues: List[String] = filterAndCollectValues(otherValues, domainPattern.matches).map(_._2)
-  val ipValues: List[String] = filterAndCollectValues(otherValues, ipPattern.matches).map(_._2)
-  val ipMaskValues: List[String] = filterAndCollectValues(otherValues, ipMaskPattern.matches).map(_._2)
-  val jsonValues: List[(String, String)] = otherValues.flatMap { case (key, valueList) =>
+  val domainValues: List[(String, String)] = filterAndCollectValues(otherValues, domainPattern.matches)
+  val ipValues: List[(String, String)] = filterAndCollectValues(otherValues, ipPattern.matches)
+  val ipMaskValues: List[(String, String)] = filterAndCollectValues(otherValues, ipMaskPattern.matches)
+  val jsonValues: List[(String, String, String)] = otherValues.flatMap { case (key, valueList) =>
     valueList.collect {
       case JsonString(s) if parse(s).isRight =>
         val json = parse(s).getOrElse(null)
-        if (json.isBoolean) (key, "Boolean")
-        else if (json.isString) (key, "String")
+        if (json.isBoolean) (key, s, "Boolean")
+        else if (json.isString) (key, s, "String")
         else if (json.isNumber) {
           Try(json.asNumber.get.toLong.getOrElse(json.asNumber.get.toDouble))
-            .map(value => if (value.isInstanceOf[Long]) (key, "Long") else (key, "Double"))
-            .getOrElse((key, "Unknown"))
-        } else if (json.isArray) (key, "Array")
-        else if (json.isObject) (key, "Object")
-        else (key, "Unknown")
+            .map(value => if (value.isInstanceOf[Long]) (key, s, "Long") else (key, s, "Double"))
+            .getOrElse((key, s, "Unknown"))
+        } else if (json.isArray) (key, s, "Array")
+        else if (json.isObject) (key, s, "Object")
+        else (key, s, "Unknown")
     }
   }.toList
 
@@ -104,7 +104,7 @@ def decodeAndFilterJson(jsonString: String): FilteredJson = {
     ips = ipValues,
     ipMasks = ipMaskValues,
     jsonStrings = jsonValues,
-    fieldLinks = modifiedFieldValues.map(_._2)
+    fieldLinks = modifiedFieldValues
   )
 }
 
@@ -119,9 +119,9 @@ def main(): Unit = {
 
   val filteredJson = decodeAndFilterJson(jsonString)
 
-  println(s"Domains: ${filteredJson.domains}")
-  println(s"IPs: ${filteredJson.ips}")
-  println(s"IP Masks: ${filteredJson.ipMasks}")
-  println(s"JSON Strings: ${filteredJson.jsonStrings}")
-  println(s"Field Links: ${filteredJson.fieldLinks}")
+  println(s"Domains:\n\n${filteredJson.domains.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"IPs:\n\n${filteredJson.ips.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"IP Masks:\n\n${filteredJson.ipMasks.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"JSON Strings:\n\n${filteredJson.jsonStrings.map((key, value, t) => s"$key -> $value: $t").mkString("\n")}")
+  println(s"Field Links:\n\n${filteredJson.fieldLinks.map((key, value) => s"$key -> $value").mkString("\n")}")
 }
