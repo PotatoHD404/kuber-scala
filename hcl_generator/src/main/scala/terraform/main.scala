@@ -39,7 +39,7 @@ def main(): Unit = {
     case Right(config) =>
       val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex", "Yandex")
 
-      val basePath = "./src/main/scala"
+      val basePath = "./hcl_generator/src/main/scala"
       generatedPackages.foreach { case (packageName, classes) =>
         createClassFile(packageName, classes, basePath)
       }
