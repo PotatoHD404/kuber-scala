@@ -4,17 +4,16 @@ import scala.annotation.tailrec
 import scala.collection.mutable
 import terraform.HCLImplicits._
 
-val resourceReferences: Map[String, String] = Map(
-  "yandex_vpc_subnet.network_id" -> "yandex_vpc_network.id"
-  // Add more mappings here as needed...
-)
+// Add string wraps
+// opaque types
+// newType
 
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
                         generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
                       )
 
-def generateType(field: SchemaField, fieldName: String): String = {
+def generateType(field: SchemaField): String = {
   val fieldType = field.Type
   val t = fieldType match {
     case 1 => "Boolean"
@@ -26,18 +25,16 @@ def generateType(field: SchemaField, fieldName: String): String = {
     case 7 => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
-  val mappedType = resourceReferences.getOrElse(fieldName, t)
-
   if (!field.Required && field.RequiredWith.isEmpty) {
-    s"Option[$mappedType]"
+    s"Option[$t]"
   } else {
-    mappedType
+    t
   }
 }
 
 def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, providerName: String): String = {
   val (fieldName, schemaField) = field
-  val fieldType = generateType(schemaField, s"$packageName.$fieldName")
+  val fieldType = generateType(schemaField)
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
@@ -68,29 +65,9 @@ def generateResourceClass(
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((s"$packageName.$fieldName", field._2), context, newPackageName, providerName)
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
-
-  val paramsComment = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
-    val fieldName = toCamelCase(field._1)
-    val fieldComment = if (field._2.Deprecated.nonEmpty) {
-      s"@param $fieldName DEPRECATED: ${field._2.Deprecated}"
-    } else if (field._2.Description.nonEmpty) {
-      s"@param $fieldName ${field._2.Description}"
-    } else {
-      s"@param $fieldName"
-    }
-    fieldComment
-  }.mkString("\n * ")
-
-  val classComment = if (resourceData.DeprecationMessage.nonEmpty) {
-    s"/** ${resourceData.Description}\n *\n * @deprecated ${resourceData.DeprecationMessage}\n * $paramsComment\n */"
-  } else if (resourceData.Description.nonEmpty) {
-    s"/** ${resourceData.Description}\n * $paramsComment\n */"
-  } else {
-    s"/** $paramsComment */"
-  }
 
   @tailrec
   def getUniqueClassName(className: String, count: Int = 0): String = {
