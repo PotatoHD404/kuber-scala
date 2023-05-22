@@ -1,9 +1,10 @@
-import io.circe.Decoder
+import io.circe.{Decoder, Json}
 import io.circe.jawn.decode
 import io.circe.parser.parse
 
 import scala.io.Source
 import scala.util.Try
+import scala.util.matching.Regex
 
 sealed trait JsonValue
 
@@ -24,14 +25,9 @@ implicit val decodeJson: Decoder[JsonValue] = List[Decoder[JsonValue]](
 
 type JsonMap = Map[String, List[JsonValue]]
 
-@main
-def main(): Unit = {
-  import scala.util.matching.Regex
-  // Assuming you have the JSON string
+case class FilteredJson(domains: List[String], ips: List[String], ipMasks: List[String], jsonStrings: List[(String, String)], fieldLinks: List[String])
 
-  val source = Source.fromFile("./terraform-docs-extractor/results/yandex.json")
-  val jsonString = source.getLines().mkString
-  source.close()
+def decodeAndFilterJson(jsonString: String): FilteredJson = {
 
   // Decode the JSON string into Map[String, List[String]]
   val map = decode[JsonMap](jsonString) match {
@@ -84,34 +80,48 @@ def main(): Unit = {
     }.toList
   }
 
-  val domainValues: List[(String, String)] = filterAndCollectValues(otherValues, domainPattern.matches)
-  val ipValues: List[(String, String)] = filterAndCollectValues(otherValues, ipPattern.matches)
-  val ipMaskValues: List[(String, String)] = filterAndCollectValues(otherValues, ipMaskPattern.matches)
-  val jsonValues: List[(String, String, String)] = otherValues.flatMap { case (key, valueList) =>
+  val domainValues: List[String] = filterAndCollectValues(otherValues, domainPattern.matches).map(_._2)
+  val ipValues: List[String] = filterAndCollectValues(otherValues, ipPattern.matches).map(_._2)
+  val ipMaskValues: List[String] = filterAndCollectValues(otherValues, ipMaskPattern.matches).map(_._2)
+  val jsonValues: List[(String, String)] = otherValues.flatMap { case (key, valueList) =>
     valueList.collect {
       case JsonString(s) if parse(s).isRight =>
         val json = parse(s).getOrElse(null)
-        if (json.isBoolean) (key, s, "Boolean")
-        else if (json.isString) (key, s, "String")
+        if (json.isBoolean) (key, "Boolean")
+        else if (json.isString) (key, "String")
         else if (json.isNumber) {
           Try(json.asNumber.get.toLong.getOrElse(json.asNumber.get.toDouble))
-            .map(value => if (value.isInstanceOf[Long]) (key, s, "Long") else (key, s, "Double"))
-            .getOrElse((key, s, "Unknown"))
-        } else if (json.isArray) (key, s, "Array")
-        else if (json.isObject) (key, s, "Object")
-        else (key, s, "Unknown")
+            .map(value => if (value.isInstanceOf[Long]) (key, "Long") else (key, "Double"))
+            .getOrElse((key, "Unknown"))
+        } else if (json.isArray) (key, "Array")
+        else if (json.isObject) (key, "Object")
+        else (key, "Unknown")
     }
   }.toList
 
-  // Print the values
-  println("\nDomains:")
-  domainValues.foreach { case (key, s) => println(s"$key: $s") }
-  println("\nIPs:")
-  ipValues.foreach { case (key, s) => println(s"$key: $s") }
-  println("\nIP Masks:")
-  ipMaskValues.foreach { case (key, s) => println(s"$key: $s") }
-  println("\nJSON Strings:")
-  jsonValues.foreach { case (key, s, valueType) => println(s"$key: $s ($valueType)") }
-  println("\nField Links:")
-  modifiedFieldValues.foreach { case (key, s) => println(s"$key: $s") }
+  FilteredJson(
+    domains = domainValues,
+    ips = ipValues,
+    ipMasks = ipMaskValues,
+    jsonStrings = jsonValues,
+    fieldLinks = modifiedFieldValues.map(_._2)
+  )
+}
+
+@main
+def main(): Unit = {
+  import scala.util.matching.Regex
+  // Assuming you have the JSON string
+
+  val source = Source.fromFile("./terraform-docs-extractor/results/yandex.json")
+  val jsonString = source.getLines().mkString
+  source.close()
+
+  val filteredJson = decodeAndFilterJson(jsonString)
+
+  println(s"Domains: ${filteredJson.domains}")
+  println(s"IPs: ${filteredJson.ips}")
+  println(s"IP Masks: ${filteredJson.ipMasks}")
+  println(s"JSON Strings: ${filteredJson.jsonStrings}")
+  println(s"Field Links: ${filteredJson.fieldLinks}")
 }
