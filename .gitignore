@@ -9,4 +9,4 @@
 /target/
 /src/main/scala/terraform/providers/yandex/
 
-src/main/scala/.DS_Store
+.DS_Store
