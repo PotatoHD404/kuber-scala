@@ -112,12 +112,49 @@ def generateResourceClass(
        |    ).flatten.mkString("\\n")
        |    + "}"
        |""".stripMargin
+
+  // Generate field descriptions for ScalaDoc.
+  val fieldDescriptions = resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
+    val fieldName = toCamelCase(field._1)
+    val fieldDescription = field._2.Description.trim
+    val fieldDepMsg = field._2.Deprecated.trim
+    val fieldDocList = List(
+      if (fieldDescription.nonEmpty) Some(fieldDescription) else None,
+      if (fieldDepMsg.nonEmpty) Some(s"Deprecated: $fieldDepMsg") else None
+    ).flatten
+    if (fieldDocList.nonEmpty) {
+      val fieldDocStr = fieldDocList.mkString(". ")
+      s" * @param $fieldName $fieldDocStr"
+    } else ""
+  }.filter(_.nonEmpty).mkString("\n")
+
+  // Generate the class documentation, removing redundant lines.
+  val classDoc = {
+    val desc = resourceData.Description.trim
+    val depMsg = resourceData.DeprecationMessage.trim
+    val docList = List(
+      if (desc.nonEmpty) Some(s" * $desc") else None,
+      if (depMsg.nonEmpty) Some(s" * @deprecated $depMsg") else None,
+      if (fieldDescriptions.nonEmpty) Some(fieldDescriptions) else None
+    ).flatten
+    if (docList.nonEmpty) {
+      val docStr = docList.mkString("\n")
+      s"""/**
+         |$docStr
+         | */\n""".stripMargin
+    } else ""
+  }
+
+  // Generate the deprecation annotation, if needed.
+  val deprecationAnnotation = if (resourceData.DeprecationMessage.nonEmpty) {
+    s"""@deprecated("${resourceData.DeprecationMessage}", "")\n"""
+  } else ""
+
   val classDef = classType match {
     case "resource" | "datasource" =>
       s"""case class $uniqueClassName(\n$fields\n) extends InfrastructureResource[$providerName] {
          |$toHCLMethod
          |}""".stripMargin
-
     case "provider" =>
       s"""case class $uniqueClassName(\n$fields\n) extends ProviderSettings[$providerName] {
          |$toHCLMethod
@@ -135,12 +172,15 @@ def generateResourceClass(
     case _ => throw new IllegalArgumentException(s"Unsupported class type: $classType")
   }
 
+  val fullClassDef = s"$classDoc$deprecationAnnotation$classDef"
+
+
   val classDefHash = fields.hashCode()
 
   if (!context.knownTypes.contains(s"$newPackageName.$uniqueClassName")) {
     context.knownTypes += (s"$newPackageName.$uniqueClassName" -> classDefHash)
     val packageClasses = context.generatedPackages.getOrElseUpdate(newPackageName, mutable.ListBuffer())
-    packageClasses += ((uniqueClassName, classDef))
+    packageClasses += ((uniqueClassName, fullClassDef))
   }
 
   (newPackageName, uniqueClassName)
