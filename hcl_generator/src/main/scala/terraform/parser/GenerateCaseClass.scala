@@ -41,17 +41,22 @@ def generateSchemaField(field: (String, SchemaField),
                        ): String = {
   val (fieldName, schemaField) = field
   val fieldType = generateType(schemaField)
-
+  // Split the full class name to check the last element
+  val splitName = fullClassName.split("\\.")
+  // If the last element of the full class name isn't the same as the field name, append the field name
+  val newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + fieldName
   schemaField.Elem match {
     case Some(Left(resource)) =>
-      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, fullClassName + "." + fieldName, parsedDocs)
+      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, newFullName, parsedDocs)
       fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
-      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName, fullClassName + "." + fieldName, parsedDocs)
+
+      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName, newFullName, parsedDocs)
       fieldType.replace("T", fieldTypeElem)
     case None =>
-      val todoComment = generateTodoComment(fullClassName, parsedDocs)
+      val todoComment = generateTodoComment(newFullName, parsedDocs)
       if (todoComment.nonEmpty) println(todoComment)
+
       if (todoComment.isEmpty) fieldType else s"$fieldType /* $todoComment */"
   }
 }
@@ -75,7 +80,12 @@ def generateResourceClass(resource: (String, TerraformResource),
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName, fullClassName + "." + name.toLowerCase + "." + field._1, parsedDocs)
+    var splitName = fullClassName.split("\\.")
+    // If the last element of the full class name isn't the same as the field name, append the field name
+    var newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + name.toLowerCase
+    splitName = newFullName.split("\\.")
+    if (!splitName.lastOption.contains(field._1)) newFullName = newFullName + "." + field._1
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName, newFullName, parsedDocs)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
 

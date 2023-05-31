@@ -38,9 +38,10 @@ object DocsParser {
     }).filter((key, v) => key.startsWith("output.") || key.startsWith("resource.") || key.startsWith("data.")).collect {
       case (key, value) =>
         val splitKey = key.split("\\.").toList
+        val cleanedSplitKey = splitKey.map(k => k.replaceAll("\\[\\d+]", ""))  // Remove indices
         val index = if key.startsWith("resource.") || key.startsWith("data.") then 2 else 1
 
-        (("" +: splitKey.slice(1, index) ++: splitKey.drop(1 + index)).mkString("."), value)
+        (("" +: cleanedSplitKey.slice(1, index) ++: cleanedSplitKey.drop(1 + index)).mkString("."), value)
     }
 
     // Define the pattern
@@ -71,8 +72,9 @@ object DocsParser {
     }.collect {
       case (key, value) =>
         val splitValue = value.split("\\.").toList
+        val cleanedSplitValue = splitValue.map(k => k.replaceAll("\\[\\d+]", ""))  // Remove indices
         val index = if key.startsWith("data.") then 2 else 1
-        (key, ("" +: splitValue.slice(1, index) ++: splitValue.drop(1 + index)).mkString("."))
+        (key, ("" +: cleanedSplitValue.slice(1, index) ++: cleanedSplitValue.drop(1 + index)).mkString("."))
     }
 
     def filterAndCollectValues(map: JsonMap, condition: String => Boolean): List[(String, String)] = {
