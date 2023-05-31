@@ -32,27 +32,37 @@ def generateType(field: SchemaField): String = {
   }
 }
 
-def generateSchemaField(field: (String, SchemaField), context: TypeContext, packageName: String, providerName: String): String = {
+def generateSchemaField(field: (String, SchemaField),
+                        context: TypeContext,
+                        packageName: String,
+                        providerName: String,
+                        fullClassName: String,
+                        parsedDocs: DocsInfo
+                       ): String = {
   val (fieldName, schemaField) = field
   val fieldType = generateType(schemaField)
 
   schemaField.Elem match {
     case Some(Left(resource)) =>
-      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName)
+      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, fullClassName + "." + fieldName, parsedDocs)
       fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
-      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName)
+      val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName, fullClassName + "." + fieldName, parsedDocs)
       fieldType.replace("T", fieldTypeElem)
-    case None => fieldType
+    case None =>
+      val todoComment = generateTodoComment(fullClassName, parsedDocs)
+      if (todoComment.nonEmpty) println(todoComment)
+      if (todoComment.isEmpty) fieldType else s"$fieldType /* $todoComment */"
   }
 }
 
-def generateResourceClass(
-                           resource: (String, TerraformResource),
-                           context: TypeContext,
-                           packageName: String,
-                           classType: String,
-                           providerName: String
+def generateResourceClass(resource: (String, TerraformResource),
+                          context: TypeContext,
+                          packageName: String,
+                          classType: String,
+                          providerName: String,
+                          fullClassName: String,
+                          parsedDocs: DocsInfo
                          ): (String, String) = {
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
@@ -65,7 +75,7 @@ def generateResourceClass(
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName)
+    val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName, fullClassName + "." + name.toLowerCase + "." + field._1, parsedDocs)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
 
@@ -163,7 +173,6 @@ def generateResourceClass(
       s"""case class $uniqueClassName(\n$fields\n) extends BackendResource {
          |$toHCLMethod
          |}""".stripMargin
-
     case "" =>
       s"""case class $uniqueClassName(\n$fields\n) {
          |$toHCLMethod
@@ -186,15 +195,24 @@ def generateResourceClass(
   (newPackageName, uniqueClassName)
 }
 
-def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String): Map[String, List[(String, String)]] = {
+def generateTodoComment(fieldName: String, filteredJson: DocsInfo): String = {
+  println(fieldName)
+  if (filteredJson.domains.contains(fieldName)) "TODO: Check if this domain field type is correct."
+  else if (filteredJson.ips.contains(fieldName)) "TODO: Check if this IP field type is correct."
+  else if (filteredJson.ipMasks.contains(fieldName)) "TODO: Check if this IP mask field type is correct."
+  else if (filteredJson.jsonStrings.contains(fieldName)) "TODO: Check if this JSON String field type is correct."
+  else ""
+}
+
+def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo): Map[String, List[(String, String)]] = {
   val context = TypeContext()
 
   providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).foreach { resource =>
-    generateResourceClass(resource, context, s"$globalPrefix.resources", "resource", providerName)
+    generateResourceClass(resource, context, s"$globalPrefix.resources", "resource", providerName, "", parsedDocs)
   }
 
   providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
-    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", "datasource", providerName)
+    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", "datasource", providerName, "", parsedDocs)
   }
 
   generateResourceClass(
@@ -202,7 +220,9 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
     context,
     globalPrefix,
     "provider",
-    providerName
+    providerName,
+    "",
+    parsedDocs
   )
 
 

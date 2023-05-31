@@ -2,7 +2,7 @@ package terraform
 
 import io.circe.parser.decode
 import io.circe.generic.auto.*
-import terraform.parser.{TerraformProviderConfig, generateCaseClasses}
+import terraform.parser.{DocsParser, TerraformProviderConfig, generateCaseClasses}
 
 import java.io.File
 import java.nio.file.{Files, Paths}
@@ -27,9 +27,21 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
 
 @main
 def main(): Unit = {
+  // Assuming you have the JSON string
+  var source = Source.fromFile("./terraform-docs-extractor/results/yandex.json")
+  val jsonString = source.getLines().mkString
+  source.close()
+
+  val parsedDocs = DocsParser.decodeAndFilterJson(jsonString)
+
+  println(s"Domains:\n\n${parsedDocs.domains.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"IPs:\n\n${parsedDocs.ips.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"IP Masks:\n\n${parsedDocs.ipMasks.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"JSON Strings:\n\n${parsedDocs.jsonStrings.map({case (key, (value, t)) => s"$key -> $value: $t"}).mkString("\n")}")
+  println(s"Field Links:\n\n${parsedDocs.fieldLinks.map((key, value) => s"$key -> $value").mkString("\n")}")
 
   // read from file
-  val source = Source.fromFile("./terraform-to-json/results/yandex.json")
+  source = Source.fromFile("./terraform-to-json/results/yandex.json")
   val jsonStr = source.getLines().mkString
   source.close()
 
@@ -37,7 +49,7 @@ def main(): Unit = {
 
   terraformProviderConfig match {
     case Right(config) =>
-      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex", "Yandex")
+      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex", "Yandex", parsedDocs)
 
       val basePath = "./hcl_generator/src/main/scala"
       generatedPackages.foreach { case (packageName, classes) =>

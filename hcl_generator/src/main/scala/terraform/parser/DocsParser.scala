@@ -26,15 +26,21 @@ implicit val decodeJson: Decoder[JsonValue] = List[Decoder[JsonValue]](
 
 type JsonMap = Map[String, List[JsonValue]]
 
-case class FilteredJson(domains: List[(String, String)], ips: List[(String, String)], ipMasks: List[(String, String)], jsonStrings: List[(String, String, String)], fieldLinks: List[(String, String)])
+case class DocsInfo(domains: Map[String, String], ips: Map[String, String], ipMasks: Map[String, String], jsonStrings: Map[String, (String, String)], fieldLinks: Map[String, String])
 
 object DocsParser {
-  def decodeAndFilterJson(jsonString: String): FilteredJson = {
+  def decodeAndFilterJson(jsonString: String): DocsInfo = {
 
     // Decode the JSON string into Map[String, List[String]]
-    val map = decode[JsonMap](jsonString) match {
+    val map = (decode[JsonMap](jsonString) match {
       case Right(jsonMap) => jsonMap
       case Left(error) => throw new RuntimeException(error.getMessage)
+    }).filter((key, v) => key.startsWith("output.") || key.startsWith("resource.") || key.startsWith("data.")).collect {
+      case (key, value) =>
+        val splitKey = key.split("\\.").toList
+        val index = if key.startsWith("resource.") || key.startsWith("data.") then 2 else 1
+
+        (("" +: splitKey.slice(1, index) ++: splitKey.drop(1 + index)).mkString("."), value)
     }
 
     // Define the pattern
@@ -65,13 +71,8 @@ object DocsParser {
     }.collect {
       case (key, value) =>
         val splitValue = value.split("\\.").toList
-        val addition = if key.startsWith("data.") then 1 else 0
-        (key, (splitValue.take(1 + addition) ++ splitValue.drop(2 + addition)).mkString("."))
-    }.collect {
-      case (key, value) =>
-        val splitKey = key.split("\\.").toList
-        val addition = if key.startsWith("resource.") || key.startsWith("data.") then 1 else 0
-        ((splitKey.take(1 + addition) ++ splitKey.drop(2 + addition)).mkString("."), value)
+        val index = if key.startsWith("data.") then 2 else 1
+        (key, ("" +: splitValue.slice(1, index) ++: splitValue.drop(1 + index)).mkString("."))
     }
 
     def filterAndCollectValues(map: JsonMap, condition: String => Boolean): List[(String, String)] = {
@@ -101,12 +102,19 @@ object DocsParser {
       }
     }.toList
 
-    FilteredJson(
-      domains = domainValues,
-      ips = ipValues,
-      ipMasks = ipMaskValues,
-      jsonStrings = jsonValues,
-      fieldLinks = modifiedFieldValues
+    // Convert the filtered lists to maps
+    val domainValuesMap: Map[String, String] = domainValues.toMap
+    val ipValuesMap: Map[String, String] = ipValues.toMap
+    val ipMaskValuesMap: Map[String, String] = ipMaskValues.toMap
+    val jsonValuesMap: Map[String, (String, String)] = jsonValues.map { case (key, value1, value2) => key -> (value1, value2) }.toMap
+    val modifiedFieldValuesMap: Map[String, String] = modifiedFieldValues.toMap
+
+    DocsInfo(
+      domains = domainValuesMap,
+      ips = ipValuesMap,
+      ipMasks = ipMaskValuesMap,
+      jsonStrings = jsonValuesMap,
+      fieldLinks = modifiedFieldValuesMap
     )
   }
 }
