@@ -45,6 +45,13 @@ def generateSchemaField(field: (String, SchemaField),
   val splitName = fullClassName.split("\\.")
   // If the last element of the full class name isn't the same as the field name, append the field name
   val newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + fieldName
+
+  // Check if the field is in fieldLinks and replace the type with the opaque type
+  val finalFieldType = parsedDocs.fieldLinks.get(newFullName) match {
+    case Some(linkedField) => s"${linkedField.capitalize}Type"
+    case None => fieldType
+  }
+
   schemaField.Elem match {
     case Some(Left(resource)) =>
       val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, fullClassName, parsedDocs)
@@ -188,12 +195,28 @@ def generateResourceClass(resource: (String, TerraformResource),
   val fullClassDef = s"$classDoc$deprecationAnnotation$classDef"
 
 
+  // Generate the opaque type for the linked field
+  val linkedFields = resourceData.Schema.keys.flatMap { fieldName =>
+    parsedDocs.fieldLinks.get(fullClassName + "." + fieldName).map { linkedField =>
+      s"opaque type ${linkedField.capitalize}Type = String"
+    }
+  }.mkString("\n")
+
+  val packageCode =
+    s"""
+       |object $uniqueClassName {
+       |$linkedFields
+       |}
+       |
+       |$fullClassDef
+       |""".stripMargin
+
   val classDefHash = fields.hashCode()
 
   if (!context.knownTypes.contains(s"$newPackageName.$uniqueClassName")) {
     context.knownTypes += (s"$newPackageName.$uniqueClassName" -> classDefHash)
     val packageClasses = context.generatedPackages.getOrElseUpdate(newPackageName, mutable.ListBuffer())
-    packageClasses += ((uniqueClassName, fullClassDef))
+    packageClasses += ((uniqueClassName, packageCode))
   }
 
   (newPackageName, uniqueClassName)

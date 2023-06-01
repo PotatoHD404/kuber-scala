@@ -73,8 +73,8 @@ object DocsParser {
       case (key, value) =>
         val splitValue = value.split("\\.").toList
         val cleanedSplitValue = splitValue.map(k => k.replaceAll("\\[\\d+]", ""))  // Remove indices
-        val index = if key.startsWith("data.") then 2 else 1
-        (key, ("" +: cleanedSplitValue.slice(1, index) ++: cleanedSplitValue.drop(1 + index)).mkString("."))
+        val index = if value.startsWith("data.") then 2 else 1
+        (key, ("" +: cleanedSplitValue(index - 1) +: cleanedSplitValue.drop(1 + index)).mkString("."))
     }
 
     def filterAndCollectValues(map: JsonMap, condition: String => Boolean): List[(String, String)] = {
