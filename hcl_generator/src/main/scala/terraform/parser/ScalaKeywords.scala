@@ -46,9 +46,8 @@ implicit class RichString(input: String) {
   def escapeKeywords: String = {
     var result = input
     for(keyword <- keywords){
-      result = result
-        .replace(s"$keyword:", s"`$keyword`:")
-        .replace(s".$keyword", s".`$keyword`")
+      result = result.replaceAll(s"\\b$keyword\\b:", s"`$keyword`:")
+      result = result.replaceAll(s"\\.\\b$keyword\\b", s".`$keyword`")
     }
     result
   }
