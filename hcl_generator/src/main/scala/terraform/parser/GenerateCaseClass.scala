@@ -47,16 +47,14 @@ def generateSchemaField(field: (String, SchemaField),
   val newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + fieldName
   schemaField.Elem match {
     case Some(Left(resource)) =>
-      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, newFullName, parsedDocs)
+      val (_, className) = generateResourceClass((fieldName, resource), context, packageName, "", providerName, fullClassName, parsedDocs)
       fieldType.replace("T", className)
     case Some(Right(schemaFieldElem)) =>
-
       val fieldTypeElem = generateSchemaField((fieldName, schemaFieldElem.copy(Required = true)), context, packageName, providerName, newFullName, parsedDocs)
       fieldType.replace("T", fieldTypeElem)
     case None =>
       val todoComment = generateTodoComment(newFullName, parsedDocs)
-      if (todoComment.nonEmpty) println(todoComment)
-
+//      if (todoComment.nonEmpty) println(todoComment)
       if (todoComment.isEmpty) fieldType else s"$fieldType /* $todoComment */"
   }
 }
@@ -72,7 +70,7 @@ def generateResourceClass(resource: (String, TerraformResource),
   val (name, resourceData) = resource
   val className = toCamelCase(name).capitalize
   val newPackageName = if (classType != "") s"$packageName.${name.toLowerCase}" else packageName
-
+  val newFullName = fullClassName + "." + name.toLowerCase
   val fields = ((
     classType match {
       case "resource" => Some(s"  resourceName: String")
@@ -80,11 +78,7 @@ def generateResourceClass(resource: (String, TerraformResource),
       case _ => None
     }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
-    var splitName = fullClassName.split("\\.")
-    // If the last element of the full class name isn't the same as the field name, append the field name
-    var newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + name.toLowerCase
-    splitName = newFullName.split("\\.")
-    if (!splitName.lastOption.contains(field._1)) newFullName = newFullName + "." + field._1
+
     val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName, newFullName, parsedDocs)
     s"  $fieldName: $fieldType"
   }).mkString(",\n")
@@ -206,7 +200,7 @@ def generateResourceClass(resource: (String, TerraformResource),
 }
 
 def generateTodoComment(fieldName: String, filteredJson: DocsInfo): String = {
-  println(fieldName)
+//  println(fieldName)
   if (filteredJson.domains.contains(fieldName)) "TODO: Check if this domain field type is correct."
   else if (filteredJson.ips.contains(fieldName)) "TODO: Check if this IP field type is correct."
   else if (filteredJson.ipMasks.contains(fieldName)) "TODO: Check if this IP mask field type is correct."
@@ -247,13 +241,7 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
              |import terraform.{InfrastructureResource, ProviderSettings, ProviderType, BackendResource}
              |
              |$classDef"""
-            .stripMargin
-            .replace("type:", "`type`:")
-            .replace(".type", ".`type`")
-            .replace("package:", "`package`:")
-            .replace(".package", ".`package`")
-            .replace("class:", "`class`:")
-            .replace(".class", ".`class`"))
+            .stripMargin.escapeKeywords)
       }
   }.view.mapValues(_.toList).toMap + (globalPrefix -> List((providerName,
     s"""package $globalPrefix

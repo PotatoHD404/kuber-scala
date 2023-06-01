@@ -34,11 +34,11 @@ def main(): Unit = {
 
   val parsedDocs = DocsParser.decodeAndFilterJson(jsonString)
 
-  println(s"Domains:\n\n${parsedDocs.domains.map((key, value) => s"$key -> $value").mkString("\n")}")
-  println(s"IPs:\n\n${parsedDocs.ips.map((key, value) => s"$key -> $value").mkString("\n")}")
-  println(s"IP Masks:\n\n${parsedDocs.ipMasks.map((key, value) => s"$key -> $value").mkString("\n")}")
-  println(s"JSON Strings:\n\n${parsedDocs.jsonStrings.map({case (key, (value, t)) => s"$key -> $value: $t"}).mkString("\n")}")
-  println(s"Field Links:\n\n${parsedDocs.fieldLinks.map((key, value) => s"$key -> $value").mkString("\n")}")
+//  println(s"Domains:\n\n${parsedDocs.domains.map((key, value) => s"$key -> $value").mkString("\n")}")
+//  println(s"IPs:\n\n${parsedDocs.ips.map((key, value) => s"$key -> $value").mkString("\n")}")
+//  println(s"IP Masks:\n\n${parsedDocs.ipMasks.map((key, value) => s"$key -> $value").mkString("\n")}")
+//  println(s"JSON Strings:\n\n${parsedDocs.jsonStrings.map({case (key, (value, t)) => s"$key -> $value: $t"}).mkString("\n")}")
+//  println(s"Field Links:\n\n${parsedDocs.fieldLinks.map((key, value) => s"$key -> $value").mkString("\n")}")
 
   // read from file
   source = Source.fromFile("./terraform-to-json/results/yandex.json")
