@@ -48,7 +48,7 @@ def generateSchemaField(field: (String, SchemaField),
 
   // Check if the field is in fieldLinks and replace the type with the opaque type
   val finalFieldType = parsedDocs.fieldLinks.get(newFullName) match {
-    case Some(linkedField) => s"${linkedField.capitalize}Type"
+    case Some(linkedField) => s"${linkedField.split("\\.").last.capitalize}Type"
     case None => fieldType
   }
 
@@ -198,11 +198,11 @@ def generateResourceClass(resource: (String, TerraformResource),
   // Generate the opaque type for the linked field
   val linkedFields = resourceData.Schema.keys.flatMap { fieldName =>
     parsedDocs.fieldLinks.get(fullClassName + "." + fieldName).map { linkedField =>
-      s"opaque type ${linkedField.capitalize}Type = String"
+      s"  opaque type ${linkedField.split("\\.").last.capitalize}Type = String"
     }
   }.mkString("\n")
 
-  val packageCode =
+  val packageCode = if (linkedFields.nonEmpty) {
     s"""
        |object $uniqueClassName {
        |$linkedFields
@@ -210,6 +210,9 @@ def generateResourceClass(resource: (String, TerraformResource),
        |
        |$fullClassDef
        |""".stripMargin
+  } else {
+    fullClassDef
+  }
 
   val classDefHash = fields.hashCode()
 
