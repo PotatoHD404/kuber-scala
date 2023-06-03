@@ -1,6 +1,6 @@
 package patched.skuber.custom
 
-import patched.skuber.{formatDuration, stringToBoolean}
+import patched.skuber.operations.{formatDuration, stringToBoolean}
 import skuber.{Event, Pod, objResourceToRef}
 import skuber.Pod.Phase
 

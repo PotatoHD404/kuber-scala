@@ -1,4 +1,4 @@
-package patched.skuber
+package patched.skuber.operations
 
 import cats.effect.IO
 

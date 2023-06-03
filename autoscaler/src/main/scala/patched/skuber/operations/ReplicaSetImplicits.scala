@@ -1,4 +1,4 @@
-package patched.skuber
+package patched.skuber.operations
 
 import play.api.libs.json.{Format, JsPath}
 import skuber.{ResourceDefinition, ResourceSpecification}
@@ -18,3 +18,5 @@ implicit val deployDef: ResourceDefinition[ReplicaSet] = new ResourceDefinition[
 implicit val deployListDef: ResourceDefinition[ReplicaSetList] = new ResourceDefinition[ReplicaSetList] {
   def spec: ResourceSpecification = ReplicaSet.specification
 }
+
+

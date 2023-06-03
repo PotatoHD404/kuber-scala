@@ -2,7 +2,7 @@ package patched.skuber.custom
 
 import skuber.{Event, Node, Pod}
 
-import patched.skuber.stringToBoolean
+import patched.skuber.operations.stringToBoolean
 
 case class MyNode(name: String,
                   status: Map[String, Boolean],

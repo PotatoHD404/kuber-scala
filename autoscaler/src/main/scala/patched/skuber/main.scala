@@ -3,13 +3,14 @@ package patched.skuber
 import akka.actor.ActorSystem
 import cats.effect.{ExitCode, IO}
 import cats.syntax.all.*
+import patched.skuber.operations.{cordonNode, drainNodes}
 // cats
 import patched.skuber.custom.KuberInfo
 import skuber.api.client.KubernetesClient
 import skuber.json.format.*
 import skuber.{EventList, NamespaceList, NodeList, PodList, k8sInit, toList}
 
-import patched.skuber.Conversions.toIO
+import patched.skuber.operations.Conversions.toIO
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
