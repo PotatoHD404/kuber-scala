@@ -39,6 +39,7 @@ def main(): Unit = {
 //  println(s"IP Masks:\n\n${parsedDocs.ipMasks.map((key, value) => s"$key -> $value").mkString("\n")}")
 //  println(s"JSON Strings:\n\n${parsedDocs.jsonStrings.map({case (key, (value, t)) => s"$key -> $value: $t"}).mkString("\n")}")
   println(s"Field Links:\n\n${parsedDocs.fieldLinks.map((key, value) => s"$key -> $value").mkString("\n")}")
+  println(s"Field Links count: ${parsedDocs.fieldLinks.size}")
 
   // read from file
   source = Source.fromFile("./terraform-to-json/results/yandex.json")

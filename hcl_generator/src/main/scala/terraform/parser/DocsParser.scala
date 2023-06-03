@@ -26,7 +26,12 @@ implicit val decodeJson: Decoder[JsonValue] = List[Decoder[JsonValue]](
 
 type JsonMap = Map[String, List[JsonValue]]
 
-case class DocsInfo(domains: Map[String, String], ips: Map[String, String], ipMasks: Map[String, String], jsonStrings: Map[String, (String, String)], fieldLinks: Map[String, String])
+case class DocsInfo(domains: Map[String, String],
+                    ips: Map[String, String],
+                    ipMasks: Map[String, String],
+                    jsonStrings: Map[String, (String, String)],
+                    fieldLinks: Map[String, String],
+                    fieldLinksSet: Set[String])
 
 object DocsParser {
   def decodeAndFilterJson(jsonString: String): DocsInfo = {
@@ -116,7 +121,8 @@ object DocsParser {
       ips = ipValuesMap,
       ipMasks = ipMaskValuesMap,
       jsonStrings = jsonValuesMap,
-      fieldLinks = modifiedFieldValuesMap
+      fieldLinks = modifiedFieldValuesMap,
+      fieldLinksSet = modifiedFieldValuesMap.values.toSet
     )
   }
 }

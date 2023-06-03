@@ -10,7 +10,8 @@ import terraform.HCLImplicits._
 
 case class TypeContext(
                         knownTypes: mutable.Map[String, Int] = mutable.Map(),
-                        generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map()
+                        generatedPackages: mutable.Map[String, mutable.ListBuffer[(String, String)]] = mutable.Map(),
+                        opaqueTypesGenerated: mutable.Map[String, Set[String]] = mutable.Map()
                       )
 
 def generateType(field: SchemaField): String = {
@@ -61,7 +62,7 @@ def generateSchemaField(field: (String, SchemaField),
       fieldType.replace("T", fieldTypeElem)
     case None =>
       val todoComment = generateTodoComment(newFullName, parsedDocs)
-//      if (todoComment.nonEmpty) println(todoComment)
+      //      if (todoComment.nonEmpty) println(todoComment)
       if (todoComment.isEmpty) fieldType else s"$fieldType /* $todoComment */"
   }
 }
@@ -196,10 +197,27 @@ def generateResourceClass(resource: (String, TerraformResource),
 
 
   // Generate the opaque type for the linked field
-  val linkedFields = resourceData.Schema.keys.flatMap { fieldName =>
-    parsedDocs.fieldLinks.get(fullClassName + "." + fieldName).map { linkedField =>
-      s"  opaque type ${linkedField.split("\\.").last.capitalize}Type = String"
+  val linkedFields = resourceData.Schema.keys.flatMap { fieldName => {
+    val linkedField = newFullName + "." + fieldName
+    if parsedDocs.fieldLinksSet.contains(linkedField) then {
+      val opaqueType = toCamelCase(linkedField.split("\\.").last).capitalize + "Type"
+      // Check if the opaque type was already created for the datasource.
+      if (context.opaqueTypesGenerated.get(newFullName).contains(opaqueType)) {
+        None
+      } else {
+        println(s"Generating opaque type $opaqueType for $newFullName.$fieldName")
+        // Add the new opaque type to the generated types for the current class type.
+        context.opaqueTypesGenerated.updateWith(newFullName) {
+          case Some(opaqueTypes) => Some(opaqueTypes + opaqueType)
+          case None => Some(Set(opaqueType))
+        }
+        println(context.opaqueTypesGenerated)
+        Some(s"  opaque type $opaqueType = String")
+      }
+    } else {
+      None
     }
+  }
   }.mkString("\n")
 
   val packageCode = if (linkedFields.nonEmpty) {
@@ -226,7 +244,7 @@ def generateResourceClass(resource: (String, TerraformResource),
 }
 
 def generateTodoComment(fieldName: String, filteredJson: DocsInfo): String = {
-//  println(fieldName)
+  //  println(fieldName)
   if (filteredJson.domains.contains(fieldName)) "TODO: Check if this domain field type is correct."
   else if (filteredJson.ips.contains(fieldName)) "TODO: Check if this IP field type is correct."
   else if (filteredJson.ipMasks.contains(fieldName)) "TODO: Check if this IP mask field type is correct."
@@ -237,13 +255,14 @@ def generateTodoComment(fieldName: String, filteredJson: DocsInfo): String = {
 def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo): Map[String, List[(String, String)]] = {
   val context = TypeContext()
 
+  providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
+    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", "datasource", providerName, "", parsedDocs)
+  }
+
   providerConfig.ResourcesMap.toSeq.sortWith(_._1 < _._1).foreach { resource =>
     generateResourceClass(resource, context, s"$globalPrefix.resources", "resource", providerName, "", parsedDocs)
   }
 
-  providerConfig.DataSourcesMap.toSeq.sortWith(_._1 < _._1).foreach { dataSource =>
-    generateResourceClass(dataSource, context, s"$globalPrefix.datasources", "datasource", providerName, "", parsedDocs)
-  }
 
   generateResourceClass(
     (s"${providerName}ProviderSettings", TerraformResource("", "", providerConfig.Schema)),
@@ -254,6 +273,8 @@ def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: S
     "",
     parsedDocs
   )
+  println(s"Field links count: ${parsedDocs.fieldLinksSet.size}")
+  println(s"Field links really added: ${context.opaqueTypesGenerated.map(_._2.size).sum}")
 
 
   context.generatedPackages.map {
