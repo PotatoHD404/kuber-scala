@@ -12,6 +12,12 @@ trait ProviderSettings[T <: ProviderType] extends TerraformResource
 
 trait BackendResource extends TerraformResource
 
+trait InputVarResource extends TerraformResource
+
+trait LocalVarResource extends TerraformResource
+
+trait OutputVarResource extends TerraformResource
+
 //trait TerraformResourceHCL[T <: InfrastructureResource[_]] {
 //  def toHCL(resource: T): String
 //}
@@ -32,11 +38,14 @@ case class ProviderConfig[
   A <: ProviderType,
   T1 <: ProviderSettings[A],
   T2 <: BackendResource,
-  T3 <: InfrastructureResource[A]
+  T3 <: InfrastructureResource[A],
+  T5 <: InputVarResource,
+  T6 <: LocalVarResource,
+  T7 <: OutputVarResource
 ]
-(provider: T1, backend: Option[T2], resources: List[T3]) {
+(provider: T1, backend: Option[T2], resources: List[T3], inputVars: List[T5] = List(), localVars: List[T6] = List(), outputVars: List[T7] = List()) {
   def toHCL: String = {
-    val allResources = provider +: backend.toList ++: resources
+    val allResources = provider +: backend.toList ++: resources ++: inputVars ++: localVars ++: outputVars
     allResources.map(_.toHCL).mkString("\n\n")
   }
 }
