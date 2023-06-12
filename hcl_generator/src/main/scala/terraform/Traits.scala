@@ -38,12 +38,9 @@ case class ProviderConfig[
   A <: ProviderType,
   T1 <: ProviderSettings[A],
   T2 <: BackendResource,
-  T3 <: InfrastructureResource[A],
-  T5 <: InputVarResource,
-  T6 <: LocalVarResource,
-  T7 <: OutputVarResource
+  T3 <: InfrastructureResource[A]
 ]
-(provider: T1, backend: Option[T2], resources: List[T3], inputVars: List[T5] = List(), localVars: List[T6] = List(), outputVars: List[T7] = List()) {
+(provider: T1, backend: Option[T2], resources: List[T3], inputVars: List[InputVarResource] = List(), localVars: List[LocalVarResource] = List(), outputVars: List[OutputVarResource] = List()) extends TerraformResource {
   def toHCL: String = {
     val allResources = provider +: backend.toList ++: resources ++: inputVars ++: localVars ++: outputVars
     allResources.map(_.toHCL).mkString("\n\n")
