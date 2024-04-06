@@ -44,10 +44,7 @@ def generateFieldType(field: SchemaField): String = {
 
 def updateFieldWithType(field: (String, SchemaField), parsedDocs: DocsInfo, fieldType: String, fullClassName: String): String = {
   val newFullName = appendFieldNameToClassName(fullClassName, field._1)
-  parsedDocs.fieldLinks.get(newFullName) match {
-    case Some(linkedField) => s"${linkedField.split("\\.").last.capitalize}Type"
-    case None => fieldType
-  }
+  fieldType
 }
 
 def appendFieldNameToClassName(fullClassName: String, fieldName: String): String = {
@@ -93,10 +90,7 @@ def generateSchemaField(field: (String, SchemaField),
   val fieldType = generateFieldType(schemaField)
   val splitName = fullClassName.split("\\.")
   val newFullName = if (splitName.lastOption.contains(fieldName)) fullClassName else fullClassName + "." + fieldName
-  val finalFieldType = parsedDocs.fieldLinks.get(newFullName) match {
-    case Some(linkedField) => s"${linkedField.split("\\.").last.capitalize}Type"
-    case None => fieldType
-  }
+  val finalFieldType = fieldType
   generateSchemaForElem(field, finalFieldType, context, packageName, providerName, newFullName, parsedDocs)
 }
 
@@ -224,22 +218,10 @@ def generateClassDef(classType: String, providerName: String, fields: String, un
   }
 }
 
-def generatePackageCode(uniqueClassName: String, fullClassDef: String, linkedFields: String, linkedFieldImports: String) = {
-  val companionObject = if (linkedFields.nonEmpty) {
-    s"""
-       |object $uniqueClassName {
-       |$linkedFields
-       |}
-       |""".stripMargin
-  } else ""
+def generatePackageCode(uniqueClassName: String, fullClassDef: String) = {
 
-  val filteredImports = linkedFieldImports.split("\n").filter { importStatement =>
-    fullClassDef.contains(importStatement.split("\\.").last)
-  }.mkString("\n")
-
-  s"""$filteredImports
+  s"""
      |
-     |$companionObject
      |$fullClassDef
      |""".stripMargin
 }
@@ -251,30 +233,7 @@ def updateContext(context: TypeContext, newPackageName: String, uniqueClassName:
     packageClasses += ((uniqueClassName, packageCode))
   }
 }
-def generateLinkedFields(resourceData: TerraformResource, newFullName: String, parsedDocs: DocsInfo, context: TypeContext) = {
-  resourceData.Schema.keys.flatMap { fieldName => {
-    val linkedField = newFullName + "." + fieldName
-    if parsedDocs.fieldLinksSet.contains(linkedField) then {
-      val opaqueType = toCamelCase(linkedField.split("\\.").last).capitalize + "Type"
-      // Check if the opaque type was already created for the datasource.
-      if (context.opaqueTypesGenerated.get(newFullName).contains(opaqueType)) {
-        None
-      } else {
-        println(s"Generating opaque type $opaqueType for $newFullName.$fieldName")
-        // Add the new opaque type to the generated types for the current class type.
-        context.opaqueTypesGenerated.updateWith(newFullName) {
-          case Some(opaqueTypes) => Some(opaqueTypes + opaqueType)
-          case None => Some(Set(opaqueType))
-        }
-        println(context.opaqueTypesGenerated)
-        Some(s"  opaque type $opaqueType = String")
-      }
-    } else {
-      None
-    }
-  }
-  }.mkString("\n")
-}
+
 def generateResourceClass(resource: (String, TerraformResource),
                           context: TypeContext,
                           packageName: String,
@@ -309,28 +268,14 @@ def generateResourceClass(resource: (String, TerraformResource),
 
   val fullClassDef = s"$classDoc$deprecationAnnotation$classDef"
 
-  // Generate the opaque type for the linked field
-  val linkedFields = generateLinkedFields(resourceData, newFullName, parsedDocs, context)
 
-  // Generate the necessary imports for linked fields
-  val linkedFieldImports = generateLinkedFieldImports(newFullName, parsedDocs)
-
-  val packageCode = generatePackageCode(uniqueClassName, fullClassDef, linkedFields, linkedFieldImports)
+  val packageCode = generatePackageCode(uniqueClassName, fullClassDef)
 
   val classDefHash = fields.hashCode()
 
   updateContext(context, newPackageName, uniqueClassName, packageCode, classDefHash)
 
   (newPackageName, uniqueClassName)
-}
-
-def generateLinkedFieldImports(newFullName: String, parsedDocs: DocsInfo): String = {
-  parsedDocs.fieldLinks.collect {
-    case (linkedField, sourceField) if linkedField.startsWith(newFullName) =>
-      val sourcePackage = "terraform.providers.yandex.datasources" + sourceField.split("\\.").dropRight(1).mkString(".")
-      val sourceClass = sourceField.split("\\.").last.capitalize
-      s"import $sourcePackage.$sourceClass.${sourceClass}Type"
-  }.toSet.mkString("\n")
 }
 
 def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo): Map[String, List[(String, String)]] = {
