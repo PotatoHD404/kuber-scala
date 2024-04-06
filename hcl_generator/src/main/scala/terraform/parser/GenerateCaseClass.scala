@@ -223,19 +223,23 @@ def generateClassDef(classType: String, providerName: String, fields: String, un
     case _ => throw new IllegalArgumentException(s"Unsupported class type: $classType")
   }
 }
-def generatePackageCode(uniqueClassName: String, fullClassDef: String, linkedFields: String) = {
-  if (linkedFields.nonEmpty) {
+
+def generatePackageCode(uniqueClassName: String, fullClassDef: String, linkedFields: String, linkedFieldImports: String) = {
+  val companionObject = if (linkedFields.nonEmpty) {
     s"""
        |object $uniqueClassName {
        |$linkedFields
        |}
-       |
-       |$fullClassDef
        |""".stripMargin
-  } else {
-    fullClassDef
-  }
+  } else ""
+
+  s"""$linkedFieldImports
+     |
+     |$companionObject
+     |$fullClassDef
+     |""".stripMargin
 }
+
 def updateContext(context: TypeContext, newPackageName: String, uniqueClassName: String, packageCode: String, classDefHash: Int) = {
   if (!context.knownTypes.contains(s"$newPackageName.$uniqueClassName")) {
     context.knownTypes += (s"$newPackageName.$uniqueClassName" -> classDefHash)
@@ -304,13 +308,24 @@ def generateResourceClass(resource: (String, TerraformResource),
   // Generate the opaque type for the linked field
   val linkedFields = generateLinkedFields(resourceData, newFullName, parsedDocs, context)
 
-  val packageCode = generatePackageCode(uniqueClassName, fullClassDef, linkedFields)
+  // Generate the necessary imports for linked fields
+  val linkedFieldImports = generateLinkedFieldImports(newFullName, parsedDocs)
+
+  val packageCode = generatePackageCode(uniqueClassName, fullClassDef, linkedFields, linkedFieldImports)
 
   val classDefHash = fields.hashCode()
 
   updateContext(context, newPackageName, uniqueClassName, packageCode, classDefHash)
 
   (newPackageName, uniqueClassName)
+}
+
+def generateLinkedFieldImports(newFullName: String, parsedDocs: DocsInfo): String = {
+  parsedDocs.fieldLinks.collect {
+    case (linkedField, sourceField) if linkedField.startsWith(newFullName) =>
+      val sourceClassName = sourceField.split("\\.").dropRight(1).mkString(".")
+      s"import $sourceClassName.${sourceField.split("\\.").last.capitalize}Type"
+  }.mkString("\n")
 }
 
 def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo): Map[String, List[(String, String)]] = {

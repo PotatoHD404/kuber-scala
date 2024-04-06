@@ -27,6 +27,7 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
 
 @main
 def main(): Unit = {
+  var s = s"${/*""*/s""}"
   // Assuming you have the JSON string
   var source = Source.fromFile("./terraform-docs-extractor/results/yandex.json")
   val jsonString = source.getLines().mkString
