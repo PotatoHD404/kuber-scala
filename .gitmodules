@@ -4,3 +4,6 @@
 [submodule "terraform-docs-extractor"]
 	path = terraform-docs-extractor
 	url = https://github.com/PotatoHD404/terraform-docs-extractor
+[submodule "hcl_generator/src/main/scala/terraform/providers"]
+	path = hcl_generator/src/main/scala/terraform/providers
+	url = https://github.com/PotatoHD404/kuber-scala-providers
