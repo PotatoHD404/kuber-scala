@@ -5,7 +5,7 @@ import io.circe.generic.semiauto.deriveCodec
 
 case class TerraformResource(
                               DeprecationMessage: String,
-                              Description: String,
+                              Description: Option[String],
                               Schema: Map[String, SchemaField]
                             )
 

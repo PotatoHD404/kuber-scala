@@ -4,23 +4,23 @@ import io.circe.{Codec, Decoder, Encoder, HCursor}
 import io.circe.generic.semiauto.{deriveCodec, deriveDecoder, deriveEncoder}
 
 case class SchemaField(
-                        AtLeastOneOf: List[String],
+                        AtLeastOneOf: Option[List[String]],
                         Computed: Boolean,
                         ComputedWhen: List[String],
-                        ConfigMode: Int,
+                        ConfigMode: Option[Int],
                         ConflictsWith: List[String],
                         Deprecated: String,
                         Description: String,
-                        DiffSuppressOnRefresh: Boolean,
+                        DiffSuppressOnRefresh: Option[Boolean],
                         Elem: Option[Either[TerraformResource, SchemaField]],
-                        ExactlyOneOf: List[String],
+                        ExactlyOneOf: Option[List[String]],
                         ForceNew: Boolean,
                         InputDefault: String,
                         MaxItems: Int,
                         MinItems: Int,
                         Optional: Boolean,
                         Required: Boolean,
-                        RequiredWith: List[String],
+                        RequiredWith: Option[List[String]],
                         Sensitive: Boolean,
                         Type: Int,
                       )

@@ -13,3 +13,4 @@
 /hcl_generator/target/
 /autoscaler/target/
 /hcl_generator/src/main/scala/terraform/providers/yandex/
+/hcl_generator/src/main/scala/terraform/providers/aws/

@@ -21,7 +21,7 @@ object HCLImplicits {
     def toHCL: String = value.map(_.toString).mkString("[", ", ", "]") // adjust this based on your needs
   }
 
-  implicit class MapToHCL[T](value: Map[String, T]) {
+  implicit class MapToHCL[T](value: Map[String, String]) {
     def toHCL: String = value.map { case (k, v) => s"$k = ${v.toString}" }.mkString("\n") // adjust this based on your needs
   }
 

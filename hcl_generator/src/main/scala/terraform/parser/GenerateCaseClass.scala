@@ -35,7 +35,7 @@ def generateFieldType(field: SchemaField): String = {
     case TYPE_DOUBLE => "Double"
     case TYPE_STRING => "String"
     case TYPE_LIST => "List[T]"
-    case TYPE_MAP => "Map[String, T]"
+    case TYPE_MAP => "Map[String, String]"
     case TYPE_SET => "Set[T]"
     case _ => throw new IllegalArgumentException(s"Unsupported type code: $fieldType")
   }
@@ -175,7 +175,7 @@ def generateFieldDescriptions(resourceData: TerraformResource) = {
 }
 def generateClassDoc(resourceData: TerraformResource, fieldDescriptions: String) = {
 
-  val desc = resourceData.Description.trim
+  val desc = resourceData.Description.getOrElse("").trim
   val depMsg = resourceData.DeprecationMessage.trim
   val docList = List(
     if (desc.nonEmpty) Some(s" * $desc") else None,
@@ -307,7 +307,7 @@ def generateResources(providerConfig: TerraformProviderConfig, globalPrefix: Str
 
 def generateProviderResource(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo, context: TypeContext): Unit = {
   generateResourceClass(
-    (s"${providerName}ProviderSettings", TerraformResource("", "", providerConfig.Schema)),
+    (s"${providerName}ProviderSettings", TerraformResource("", Option(""), providerConfig.Schema)),
     context,
     globalPrefix,
     "provider",
