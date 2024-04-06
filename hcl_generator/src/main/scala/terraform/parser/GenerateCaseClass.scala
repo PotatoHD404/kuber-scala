@@ -233,7 +233,11 @@ def generatePackageCode(uniqueClassName: String, fullClassDef: String, linkedFie
        |""".stripMargin
   } else ""
 
-  s"""$linkedFieldImports
+  val filteredImports = linkedFieldImports.split("\n").filter { importStatement =>
+    fullClassDef.contains(importStatement.split("\\.").last)
+  }.mkString("\n")
+
+  s"""$filteredImports
      |
      |$companionObject
      |$fullClassDef
@@ -323,9 +327,10 @@ def generateResourceClass(resource: (String, TerraformResource),
 def generateLinkedFieldImports(newFullName: String, parsedDocs: DocsInfo): String = {
   parsedDocs.fieldLinks.collect {
     case (linkedField, sourceField) if linkedField.startsWith(newFullName) =>
-      val sourceClassName = sourceField.split("\\.").dropRight(1).mkString(".")
-      s"import $sourceClassName.${sourceField.split("\\.").last.capitalize}Type"
-  }.mkString("\n")
+      val sourcePackage = "terraform.providers.yandex.datasources" + sourceField.split("\\.").dropRight(1).mkString(".")
+      val sourceClass = sourceField.split("\\.").last.capitalize
+      s"import $sourcePackage.$sourceClass.${sourceClass}Type"
+  }.toSet.mkString("\n")
 }
 
 def generateCaseClasses(providerConfig: TerraformProviderConfig, globalPrefix: String, providerName: String, parsedDocs: DocsInfo): Map[String, List[(String, String)]] = {
