@@ -29,7 +29,7 @@ def createClassFile(packageName: String, classes: List[(String, String)], basePa
 def main(): Unit = {
   var s = s"${/*""*/s""}"
   // Assuming you have the JSON string
-  var source = Source.fromFile("./terraform-docs-extractor/results/aws.json")
+  var source = Source.fromFile("./terraform-docs-extractor/results/yandex.json")
   val jsonString = source.getLines().mkString
   source.close()
 
@@ -43,7 +43,7 @@ def main(): Unit = {
   println(s"Field Links count: ${parsedDocs.fieldLinks.size}")
 
   // read from file
-  source = Source.fromFile("./terraform-to-json/results/aws.json")
+  source = Source.fromFile("./terraform-to-json/results/yandex.json")
   val jsonStr = source.getLines().mkString
   source.close()
 
@@ -51,7 +51,7 @@ def main(): Unit = {
 
   terraformProviderConfig match {
     case Right(config) =>
-      val generatedPackages = generateCaseClasses(config, "terraform.providers.aws", "AWS", parsedDocs)
+      val generatedPackages = generateCaseClasses(config, "terraform.providers.yandex", "Yandex", parsedDocs)
 
       val basePath = "./hcl_generator/src/main/scala"
       generatedPackages.foreach { case (packageName, classes) =>
