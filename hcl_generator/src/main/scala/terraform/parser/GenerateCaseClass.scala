@@ -109,15 +109,15 @@ def generateFields(classType: String, resourceData: TerraformResource, context: 
     case "datasource" => Some(s"  datasourceName: String")
     case _ => None
   }) ++: resourceData.Schema.toSeq.sortWith(_._1 < _._1).sortWith { (a, b) =>
-    val aOptional = a._2.Optional
-    val bOptional = b._2.Optional
+    val aOptional = !a._2.Required
+    val bOptional = !b._2.Required
 
     if (aOptional == bOptional) false
     else !aOptional
   }.map { field =>
     val fieldName = toCamelCase(field._1)
     val fieldType = generateSchemaField((field._1, field._2), context, newPackageName, providerName, newFullName, parsedDocs)
-    val isOptional = field._2.Optional
+    val isOptional = !field._2.Required
 
     if (isOptional)
       s"  $fieldName: Option[$fieldType] = None"
@@ -139,7 +139,7 @@ def generateToHCLBody(resourceData: TerraformResource) = {
   resourceData.Schema.toSeq.sortWith(_._1 < _._1).map { field =>
     val fieldName = toCamelCase(field._1)
     val realFieldName = field._1
-    val isOptional = field._2.Optional
+    val isOptional = !field._2.Required
     field._2.Type match {
       case TYPE_BOOLEAN | TYPE_INT | TYPE_DOUBLE | TYPE_STRING if isOptional => s"""    this.$fieldName.map(_.toHCL).map(el => s"$realFieldName = $${el}")"""
       case TYPE_LIST if isOptional => s"""    this.$fieldName.map(_.map(_.toHCL).mkString(", ")).map(el => s"$realFieldName = [$${el}]")"""

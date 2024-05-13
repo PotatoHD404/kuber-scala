@@ -1,4 +1,4 @@
-import terraform.kubenetes_clusters.YandexClusterFactory
+import terraform.kubenetes_clusters.{VMConfig, YandexClusterFactory}
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import java.io.PrintWriter
@@ -37,7 +37,16 @@ def main(): Unit = {
     token = envOrNone("YC_TOKEN"),
     zone = envOrNone("YC_ZONE")
   )
-  val terraformString = YandexClusterFactory(provider).get.toHCL
+  val vmConfigs = List(
+    VMConfig(
+      count = 2,
+      cores = 2,
+      memory = 4,
+      diskSize = 20,
+      sshKey = "ubuntu:${file(\"./id_rsa.pub\")}"
+    )
+  )
+  val terraformString = YandexClusterFactory(provider, vmConfigs=vmConfigs).create.toHCL
   println(terraformString)
   Using.resource(new PrintWriter("terraformOutput.tf")) { writer =>
     writer.write(terraformString)
