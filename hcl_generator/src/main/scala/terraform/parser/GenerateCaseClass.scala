@@ -146,9 +146,9 @@ def generateToHCLBody(resourceData: TerraformResource) = {
       case TYPE_MAP if isOptional => s"""    this.$fieldName.map(_.view.mapValues(_.toHCL).mkString(", ")).map(el => s"$realFieldName = {$${el}}")"""
       case TYPE_SET if isOptional => s"""    this.$fieldName.map(_.map(_.toHCL).mkString(", ")).map(el => s"$realFieldName = [$${el}]")"""
       case TYPE_BOOLEAN | TYPE_INT | TYPE_DOUBLE | TYPE_STRING => s"""    Some(s"$realFieldName = $${this.$fieldName}")"""
-      case TYPE_LIST => s"""    Some(s"$realFieldName = [$${this.$fieldName.map(_.toHCL).mkString(", ")}]")"""
-      case TYPE_MAP => s"""    Some(s"$realFieldName = {$${this.$fieldName.view.mapValues(_.toHCL).mkString(", ")}}")"""
-      case TYPE_SET => s"""    Some(s"$realFieldName = [$${this.$fieldName.map(_.toHCL).mkString(", ")}]")"""
+      case TYPE_LIST => s"""    Some(s"$realFieldName $${this.$fieldName.map(_.toHCL).mkString(", ")}")"""
+      case TYPE_MAP => s"""    Some(s"$realFieldName $${this.$fieldName.view.mapValues(_.toHCL).mkString(", ")}")"""
+      case TYPE_SET => s"""    Some(s"$realFieldName $${this.$fieldName.map(_.toHCL).mkString(", ")}")"""
       case _ => throw new IllegalArgumentException(s"Unsupported type code: ${field._2.Type}")
     }
   }.mkString(",\n")
@@ -162,11 +162,11 @@ def generateToHCLMethod(classType: String, name: String, toHCLBody: String) = {
       case "provider" => s"""provider \\"$name\\""""
       case _ => ""
     }
-  }{" +
+  } {\\n" +
      |    List[Option[String]](
      |$toHCLBody
      |    ).flatten.mkString("\\n")
-     |    + "}"
+     |    + "\\n}"
      |""".stripMargin
 }
 def generateFieldDescriptions(resourceData: TerraformResource) = {
