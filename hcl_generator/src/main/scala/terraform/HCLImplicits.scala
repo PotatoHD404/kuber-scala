@@ -22,7 +22,7 @@ object HCLImplicits {
   }
 
   implicit class MapToHCL[T](value: Map[String, String]) {
-    def toHCL: String = value.map { case (k, v) => s"$k = ${v.toString}" }.mkString("\n") // adjust this based on your needs
+    def toHCL: String = value.map { case (k, v) => s"$k = ${v.toHCL}" }.mkString("\n") // adjust this based on your needs
   }
 
   implicit class SetToHCL[T](value: Set[T]) {

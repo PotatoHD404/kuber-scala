@@ -58,7 +58,7 @@ case class YandexClusterFactory[
     val network = YandexVpcNetwork("foo")
     val subnet = YandexVpcSubnet("foo", networkId = network.id, v4CidrBlocks = "10.5.0.0/24" :: Nil)
     val vmFactory = YandexVMFactory(image, subnet, vmConfigs)
-    val resources: List[InfrastructureResource[Yandex]] = image :: vmFactory.create
+    val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: vmFactory.create
     YandexProviderConfig(provider, backend, resources)
   }
 }
