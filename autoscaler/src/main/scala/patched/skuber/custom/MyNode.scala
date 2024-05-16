@@ -1,8 +1,8 @@
 package patched.skuber.custom
 
-import skuber.{Event, Node, Pod}
-
+import skuber.{Event, Node, NodeList, Pod}
 import patched.skuber.operations.stringToBoolean
+import play.api.libs.json.Format
 
 case class MyNode(name: String,
                   status: Map[String, Boolean],

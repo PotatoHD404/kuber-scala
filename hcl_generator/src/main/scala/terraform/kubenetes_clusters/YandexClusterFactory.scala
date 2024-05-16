@@ -52,7 +52,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, v
 trait Cluster {
   def upscale(n: Int): Unit
   def downscale(n: Int): Unit
-  def applyTerraformConfig(terraformFilePath: String): Unit
+  def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
 }
 
 case class YandexCluster[
