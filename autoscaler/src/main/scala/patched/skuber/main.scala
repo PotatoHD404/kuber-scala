@@ -9,7 +9,6 @@ import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import scala.io.Source
 import scala.util.{Failure, Try, Using}
-// cats
 import patched.skuber.custom.KuberInfo
 import skuber.api.client.KubernetesClient
 import skuber.json.format.*

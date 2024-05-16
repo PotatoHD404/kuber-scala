@@ -20,7 +20,7 @@ lazy val hclGenerator = (project in file("hcl_generator"))
       "io.circe" %% "circe-generic" % "0.14.5",
       "io.circe" %% "circe-parser" % "0.14.5",
       "com.github.javafaker" % "javafaker" % "1.0.2" % Test,
-      "org.scalatest" %% "scalatest" % "3.2.7" % Test
+      "org.scalatest" %% "scalatest" % "3.2.18" % Test
     )
   )
 
