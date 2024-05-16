@@ -7,9 +7,10 @@ import terraform.providers.yandex.resources.yandex_vpc_network.YandexVpcNetwork
 import terraform.providers.yandex.resources.yandex_vpc_subnet.YandexVpcSubnet
 import terraform.{BackendResource, InfrastructureResource, ProviderSettings}
 import terraform.providers.yandex.{Yandex, YandexProviderConfig}
-import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
-import java.util.Base64
+import java.io.PrintWriter
+import scala.util.{Failure, Success, Try, Using}
+import sys.process.stringToProcess
 
 case class VMConfig(
                      count: Int,
@@ -48,10 +49,17 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, v
   }.flatten
 }
 
-case class YandexClusterFactory[
+trait Cluster {
+  def upscale(n: Int): Unit
+  def downscale(n: Int): Unit
+  def applyTerraformConfig(terraformFilePath: String): Unit
+}
+
+case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
   T2 <: BackendResource,
-](provider: T1, backend: Option[T2] = None, var vmConfigs: List[VMConfig]) {
+](provider: T1, backend: Option[T2] = None, var vmConfigs: List[VMConfig]) extends Cluster {
+
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
     val image = YandexComputeImage("family_images_linux", family = Some("ubuntu-2004-lts"))
     val network = YandexVpcNetwork("foo")
@@ -61,23 +69,74 @@ case class YandexClusterFactory[
     YandexProviderConfig(provider, backend, resources)
   }
 
-  def upscale(n: Int): YandexClusterFactory[T1, T2] = {
+  override def upscale(n: Int): Unit = {
     require(n > 0, "Number of instances to add must be positive")
     val updatedConfigs = vmConfigs match {
       case head :: tail => head.copy(count = head.count + n) :: tail
       case _ => vmConfigs
     }
     require(vmConfigs.head.count > 0, "Number of instances to add must be positive")
-    copy(vmConfigs = updatedConfigs)
+    vmConfigs = updatedConfigs
   }
 
-  def downscale(n: Int): YandexClusterFactory[T1, T2] = {
+  override def downscale(n: Int): Unit = {
     require(n > 0, "Number of instances to remove must be positive")
     val updatedConfigs = vmConfigs match {
       case head :: tail => head.copy(count = Math.max(head.count - n, 0)) :: tail
       case _ => vmConfigs
     }
-    copy(vmConfigs = updatedConfigs)
+    vmConfigs = updatedConfigs
   }
 
+  def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit = {
+    val terraformString = create.toHCL
+    Using.resource(new PrintWriter(terraformFilePath)) { writer =>
+      writer.write(terraformString)
+    }
+
+    val fmtResult = Try {
+      val fmtCommand = s"terraform fmt $terraformFilePath"
+      val fmtExitCode = fmtCommand.!
+      if (fmtExitCode != 0) {
+        throw new RuntimeException(s"Command '$fmtCommand' exited with code $fmtExitCode")
+      }
+    }
+
+    fmtResult match {
+      case Success(_) =>
+        println(s"Terraform configuration in $terraformFilePath formatted successfully.")
+      case Failure(ex) =>
+        println(s"Error formatting Terraform configuration in $terraformFilePath: ${ex.getMessage}")
+    }
+
+    val initResult = Try {
+      val initCommand = s"terraform init"
+      val initExitCode = initCommand.!
+      if (initExitCode != 0) {
+        throw new RuntimeException(s"Command '$initCommand' exited with code $initExitCode")
+      }
+    }
+
+    initResult match {
+      case Success(_) =>
+        println("Terraform initialized successfully.")
+      case Failure(ex) =>
+        println(s"Error initializing Terraform: ${ex.getMessage}")
+    }
+
+    val applyResult = Try {
+      val applyCommand = s"terraform apply -auto-approve"
+      val applyExitCode = applyCommand.!
+      if (applyExitCode != 0) {
+        throw new RuntimeException(s"Command '$applyCommand' exited with code $applyExitCode")
+      }
+    }
+
+    applyResult match {
+      case Success(_) =>
+        println("Terraform apply completed successfully.")
+      case Failure(ex) =>
+        println(s"Error applying Terraform configuration: ${ex.getMessage}")
+    }
+  }
 }

@@ -1,9 +1,9 @@
-import terraform.kubenetes_clusters.{VMConfig, YandexClusterFactory}
+import terraform.kubenetes_clusters.{Cluster, VMConfig, YandexCluster}
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import java.io.PrintWriter
 import scala.io.Source
-import scala.sys.process._
+import scala.sys.process.*
 import scala.util.{Failure, Success, Try, Using}
 
 object DotenvLoader {
@@ -50,24 +50,14 @@ def main(): Unit = {
 
   val terraformFilePath = "terraformOutput.tf"
 
-  val terraformString = YandexClusterFactory(provider, vmConfigs=vmConfigs).create.toHCL
-//  println(terraformString)
-  Using.resource(new PrintWriter(terraformFilePath)) { writer =>
-    writer.write(terraformString)
-  }
-  val fmtResult = Try {
-    val fmtCommand = s"terraform fmt $terraformFilePath"
-    val fmtExitCode = fmtCommand.!
-    if (fmtExitCode != 0) {
-      throw new RuntimeException(s"Command '$fmtCommand' exited with code $fmtExitCode")
-    }
-  }
+  val cluster = YandexCluster(provider, vmConfigs = vmConfigs)
+  cluster.applyTerraformConfig(terraformFilePath)
 
-  // Обработка результата выполнения команды terraform fmt
-  fmtResult match {
-    case Success(_) =>
-      println(s"Terraform configuration in $terraformFilePath formatted successfully.")
-    case Failure(ex) =>
-      println(s"Error formatting Terraform configuration in $terraformFilePath: ${ex.getMessage}")
-  }
+  // Увеличить количество виртуальных машин на 1
+  cluster.upscale(1)
+  cluster.applyTerraformConfig(terraformFilePath)
+
+  // Уменьшить количество виртуальных машин на 1
+  cluster.downscale(1)
+  cluster.applyTerraformConfig(terraformFilePath)
 }

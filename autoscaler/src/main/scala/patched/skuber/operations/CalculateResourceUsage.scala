@@ -1,8 +1,9 @@
 package patched.skuber.operations
 
 import cats.effect.IO
-import skuber.api.client.{Cluster, KubernetesClient}
+import skuber.api.client.KubernetesClient
 import skuber.{NodeList, PodList}
+import terraform.kubenetes_clusters.Cluster
 
 
 case class NodeResourceUsage(nodeName: String, cpuUsage: Double, memoryUsage: Double)
@@ -16,7 +17,6 @@ def calculateNodeResourceUsage(nodes: NodeList, pods: PodList): List[NodeResourc
     NodeResourceUsage(node.name, cpuUsage, memoryUsage)
   }
 }
-
 
 def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluster): IO[Unit] = {
   for {
@@ -38,11 +38,13 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
       val memoryNeeded = math.ceil((totalMemoryUsage / 0.9) - totalMemoryCapacity).toInt
       val nodesNeeded = math.max(cpuNeeded / 2, memoryNeeded / 4)
       cluster.upscale(nodesNeeded)
+      сluster.applyTerraformConfig()
     } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5) {
       val cpuExcess = math.floor(totalCpuCapacity - (totalCpuUsage / 0.5)).toInt
       val memoryExcess = math.floor(totalMemoryCapacity - (totalMemoryUsage / 0.5)).toInt
       val nodesExcess = math.min(cpuExcess / 2, memoryExcess / 4)
       cluster.downscale(nodesExcess)
+      сluster.applyTerraformConfig()
     }
   } yield ()
 }
