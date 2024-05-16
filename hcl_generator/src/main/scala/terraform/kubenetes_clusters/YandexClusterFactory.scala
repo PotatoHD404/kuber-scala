@@ -94,49 +94,38 @@ case class YandexCluster[
       writer.write(terraformString)
     }
 
-    val fmtResult = Try {
-      val fmtCommand = s"terraform fmt $terraformFilePath"
-      val fmtExitCode = fmtCommand.!
-      if (fmtExitCode != 0) {
-        throw new RuntimeException(s"Command '$fmtCommand' exited with code $fmtExitCode")
+    def runCommand(command: String, successMessage: String, errorMessage: String): Unit = {
+      val result = Try {
+        val exitCode = command.!
+        if (exitCode != 0) {
+          throw new RuntimeException(s"Command '$command' exited with code $exitCode")
+        }
+      }
+
+      result match {
+        case Success(_) =>
+          println(successMessage)
+        case Failure(ex) =>
+          println(s"$errorMessage: ${ex.getMessage}")
       }
     }
 
-    fmtResult match {
-      case Success(_) =>
-        println(s"Terraform configuration in $terraformFilePath formatted successfully.")
-      case Failure(ex) =>
-        println(s"Error formatting Terraform configuration in $terraformFilePath: ${ex.getMessage}")
-    }
+    runCommand(
+      command = s"terraform fmt $terraformFilePath",
+      successMessage = s"Terraform configuration in $terraformFilePath formatted successfully.",
+      errorMessage = s"Error formatting Terraform configuration in $terraformFilePath"
+    )
 
-    val initResult = Try {
-      val initCommand = s"terraform init"
-      val initExitCode = initCommand.!
-      if (initExitCode != 0) {
-        throw new RuntimeException(s"Command '$initCommand' exited with code $initExitCode")
-      }
-    }
+    runCommand(
+      command = "terraform init",
+      successMessage = "Terraform initialized successfully.",
+      errorMessage = "Error initializing Terraform"
+    )
 
-    initResult match {
-      case Success(_) =>
-        println("Terraform initialized successfully.")
-      case Failure(ex) =>
-        println(s"Error initializing Terraform: ${ex.getMessage}")
-    }
-
-    val applyResult = Try {
-      val applyCommand = s"terraform apply -auto-approve"
-      val applyExitCode = applyCommand.!
-      if (applyExitCode != 0) {
-        throw new RuntimeException(s"Command '$applyCommand' exited with code $applyExitCode")
-      }
-    }
-
-    applyResult match {
-      case Success(_) =>
-        println("Terraform apply completed successfully.")
-      case Failure(ex) =>
-        println(s"Error applying Terraform configuration: ${ex.getMessage}")
-    }
+    runCommand(
+      command = "terraform apply -auto-approve",
+      successMessage = "Terraform apply completed successfully.",
+      errorMessage = "Error applying Terraform configuration"
+    )
   }
 }
