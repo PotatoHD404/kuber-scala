@@ -1,6 +1,8 @@
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.2.2"
 
+scalacOptions ++= Seq("-Xmax-classfile-name", "128")
+
 lazy val commonSettings = Seq(
   libraryDependencies ++= Seq(
     "io.circe" %% "circe-core" % "0.14.5",

@@ -19,8 +19,7 @@ case class VMConfig(
                      sshKey: String
                    )
 
-def intToBase16 (value: Int): String
-= {
+def intToBase16(value: Int): String = {
   f"$value%x"
 }
 
@@ -52,7 +51,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, v
 case class YandexClusterFactory[
   T1 <: ProviderSettings[Yandex],
   T2 <: BackendResource,
-](provider: T1, backend: Option[T2] = None, vmConfigs: List[VMConfig]) {
+](provider: T1, backend: Option[T2] = None, var vmConfigs: List[VMConfig]) {
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
     val image = YandexComputeImage("family_images_linux", family = Some("ubuntu-2004-lts"))
     val network = YandexVpcNetwork("foo")
@@ -61,4 +60,24 @@ case class YandexClusterFactory[
     val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: vmFactory.create
     YandexProviderConfig(provider, backend, resources)
   }
+
+  def upscale(n: Int): YandexClusterFactory[T1, T2] = {
+    require(n > 0, "Number of instances to add must be positive")
+    val updatedConfigs = vmConfigs match {
+      case head :: tail => head.copy(count = head.count + n) :: tail
+      case _ => vmConfigs
+    }
+    require(vmConfigs.head.count > 0, "Number of instances to add must be positive")
+    copy(vmConfigs = updatedConfigs)
+  }
+
+  def downscale(n: Int): YandexClusterFactory[T1, T2] = {
+    require(n > 0, "Number of instances to remove must be positive")
+    val updatedConfigs = vmConfigs match {
+      case head :: tail => head.copy(count = Math.max(head.count - n, 0)) :: tail
+      case _ => vmConfigs
+    }
+    copy(vmConfigs = updatedConfigs)
+  }
+
 }
