@@ -1,5 +1,18 @@
 package terraform
 
+opaque type UnquotedString = String
+
+
+object UnquotedString {
+  def apply(value: String): UnquotedString = value
+
+  extension (str: UnquotedString) {
+    def value: String = str
+
+    def toHCL: String = s"""$str"""
+  }
+}
+
 object HCLImplicits {
   implicit class BooleanToHCL(value: Boolean) {
     def toHCL: String = value.toString
@@ -22,6 +35,10 @@ object HCLImplicits {
   }
 
   implicit class MapToHCL[T](value: Map[String, String]) {
+    def toHCL: String = value.map { case (k, v) => s"$k = ${v.toHCL}" }.mkString("\n") // adjust this based on your needs
+  }
+
+  implicit class MapToHCL2[T](value: Map[String, UnquotedString]) {
     def toHCL: String = value.map { case (k, v) => s"$k = ${v.toHCL}" }.mkString("\n") // adjust this based on your needs
   }
 

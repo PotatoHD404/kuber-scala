@@ -16,3 +16,4 @@
 /hcl_generator/src/main/scala/terraform/providers/aws/
 .env
 terraformOutput.tf
+/.terraform/

@@ -4,8 +4,9 @@ import terraform.providers.yandex.datasources.yandex_compute_image.YandexCompute
 import terraform.providers.yandex.resources.yandex_compute_disk.YandexComputeDisk
 import terraform.providers.yandex.resources.yandex_compute_instance.{BootDisk, NetworkInterface, Resources, YandexComputeInstance}
 import terraform.providers.yandex.resources.yandex_vpc_network.YandexVpcNetwork
+import terraform.providers.yandex.resources.yandex_vpc_security_group.{Egress, Ingress, YandexVpcSecurityGroup}
 import terraform.providers.yandex.resources.yandex_vpc_subnet.YandexVpcSubnet
-import terraform.{BackendResource, InfrastructureResource, ProviderSettings}
+import terraform.{BackendResource, InfrastructureResource, ProviderSettings, UnquotedString}
 import terraform.providers.yandex.{Yandex, YandexProviderConfig}
 
 import java.io.PrintWriter
@@ -24,17 +25,44 @@ def intToBase16(value: Int): String = {
   f"$value%x"
 }
 
-case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, vmConfigs: List[VMConfig]) {
-  def create: List[InfrastructureResource[Yandex]] = {
-    vmConfigs.flatMap { config =>
-      (1 to config.count).map { index =>
-        val instanceName = s"instance_${intToBase16(config.hashCode())}_$index"
-        val diskName = s"disk_${intToBase16(config.hashCode())}_$index"
-        val disk = YandexComputeDisk(resourceName=diskName, size=Some(config.diskSize), `type`=Some("network-ssd"), zone=Some("ru-central1-a"), imageId=Some(image.id))
+
+
+
+
+case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, securityGroup: YandexVpcSecurityGroup, vmConfigs: List[VMConfig]) {
+  def create(k3sToken: String): List[InfrastructureResource[Yandex]] = {
+
+    vmConfigs.zipWithIndex.flatMap { case (config, index) =>
+      (1 to config.count).map { instanceIndex =>
+        val instanceName = s"instance_${intToBase16(config.hashCode())}_${index + 1}_$instanceIndex"
+        val diskName = s"disk_${intToBase16(config.hashCode())}_${index + 1}_$instanceIndex"
+        val disk = YandexComputeDisk(resourceName = diskName, size = Some(config.diskSize), `type` = Some("network-ssd"), zone = Some("ru-central1-a"), imageId = Some(image.id))
         val bootDisk = BootDisk(diskId = disk.id)
-        val networkInterface = NetworkInterface(subnetId = subnet.id, nat = Some(true))
+        val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)))
         val resources = Resources(cores = config.cores, memory = config.memory)
-        val metadata = Map("ssh-keys" -> config.sshKey)
+        val metadata: Map[String, UnquotedString] = if (index == 0 && instanceIndex == 1) {
+          // Master node
+          Map(
+            "ssh-keys" -> UnquotedString(s""""${config.sshKey}""""),
+            "user-data" ->
+              UnquotedString(s"""<<-EOT
+                 |#cloud-config
+                 |runcmd:
+                 |  - curl -sfL https://get.k3s.io | sh -
+                 |EOT""".stripMargin)
+          )
+        } else {
+          // Slave nodes
+          Map(
+            "ssh-keys" -> UnquotedString(s""""${config.sshKey}""""),
+            "user-data" ->
+              UnquotedString(s"""<<-EOT
+                 |#cloud-config
+                 |runcmd:
+                 |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$instanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
+                 |EOT""".stripMargin)
+          )
+        }
 
         YandexComputeInstance(
           resourceName = instanceName,
@@ -58,14 +86,29 @@ trait Cluster {
 case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
   T2 <: BackendResource,
-](provider: T1, backend: Option[T2] = None, var vmConfigs: List[VMConfig]) extends Cluster {
+](provider: T1, backend: Option[T2] = None, k3sToken: String, var vmConfigs: List[VMConfig]) extends Cluster {
 
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
     val image = YandexComputeImage("family_images_linux", family = Some("ubuntu-2004-lts"))
-    val network = YandexVpcNetwork("foo")
-    val subnet = YandexVpcSubnet("foo", networkId = network.id, v4CidrBlocks = "10.5.0.0/24" :: Nil)
-    val vmFactory = YandexVMFactory(image, subnet, vmConfigs)
-    val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: vmFactory.create
+    val network = YandexVpcNetwork("my_vpc_network")
+    val subnet = YandexVpcSubnet("my_subnet", networkId = network.id, v4CidrBlocks = "10.5.0.0/24" :: Nil)
+    val securityGroup = YandexVpcSecurityGroup(
+      "k3s_security_group",
+      name = Some("k3s-security-group"),
+      description = Some("Security group for k3s cluster"),
+      networkId = network.id,
+      ingress = Some(Set(
+        Ingress(protocol = "TCP", port = Some(6443), v4CidrBlocks = "0.0.0.0/0" :: Nil),
+        Ingress(protocol = "TCP", port = Some(10250), v4CidrBlocks = "0.0.0.0/0" :: Nil),
+        Ingress(protocol = "TCP", fromPort = Some(2379), toPort = Some(2380), v4CidrBlocks = "0.0.0.0/0" :: Nil),
+        Ingress(protocol = "UDP", fromPort = Some(8472), toPort = Some(8472), v4CidrBlocks = "0.0.0.0/0" :: Nil)
+      )),
+      egress = Some(Set(
+        Egress(protocol = "ANY", fromPort = Some(0), toPort = Some(65535), v4CidrBlocks = "0.0.0.0/0" :: Nil)
+      ))
+    )
+    val vmFactory = YandexVMFactory(image, subnet, securityGroup, vmConfigs)
+    val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: securityGroup :: vmFactory.create(k3sToken)
     YandexProviderConfig(provider, backend, resources)
   }
 
@@ -75,7 +118,6 @@ case class YandexCluster[
       case head :: tail => head.copy(count = head.count + n) :: tail
       case _ => vmConfigs
     }
-    require(vmConfigs.head.count > 0, "Number of instances to add must be positive")
     vmConfigs = updatedConfigs
   }
 

@@ -29,6 +29,13 @@ def envOrNone(name: String): Option[String] = {
   Option(System.getenv(name)).orElse(Option(System.getProperty(name)))
 }
 
+def envOrError(name: String): String = {
+  Option(System.getenv(name))
+    .orElse(Option(System.getProperty(name)))
+    .getOrElse(throw new NoSuchElementException(s"No environment variable or system property found for '$name'"))
+}
+
+
 @main
 def main(): Unit = {
   DotenvLoader.load()
@@ -49,15 +56,16 @@ def main(): Unit = {
   )
 
   val terraformFilePath = "terraformOutput.tf"
+  val k3sToken = envOrError("K3S_TOKEN")
 
-  val cluster = YandexCluster(provider, vmConfigs = vmConfigs)
+  val cluster = YandexCluster(provider, vmConfigs = vmConfigs, k3sToken = k3sToken)
   cluster.applyTerraformConfig(terraformFilePath)
 
   // Увеличить количество виртуальных машин на 1
-  cluster.upscale(1)
-  cluster.applyTerraformConfig(terraformFilePath)
+//  cluster.upscale(1)
+//  cluster.applyTerraformConfig(terraformFilePath)
 
   // Уменьшить количество виртуальных машин на 1
-  cluster.downscale(1)
-  cluster.applyTerraformConfig(terraformFilePath)
+//  cluster.downscale(1)
+//  cluster.applyTerraformConfig(terraformFilePath)
 }
