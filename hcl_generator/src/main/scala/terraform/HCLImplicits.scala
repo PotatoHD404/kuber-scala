@@ -1,5 +1,7 @@
 package terraform
 
+import scala.language.implicitConversions
+
 opaque type UnquotedString = String
 
 
@@ -11,7 +13,11 @@ object UnquotedString {
 
     def toHCL: String = s"""$str"""
   }
+
+  implicit def fromString(str: String): UnquotedString = UnquotedString(s""""$str"""")
+  
 }
+
 
 object HCLImplicits {
   implicit class BooleanToHCL(value: Boolean) {

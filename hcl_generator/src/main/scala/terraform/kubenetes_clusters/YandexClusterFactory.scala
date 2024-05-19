@@ -26,41 +26,42 @@ def intToBase16(value: Int): String = {
 }
 
 
-
-
-
 case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, securityGroup: YandexVpcSecurityGroup, vmConfigs: List[VMConfig]) {
   def create(k3sToken: String): List[InfrastructureResource[Yandex]] = {
-
-    vmConfigs.zipWithIndex.flatMap { case (config, index) =>
+    vmConfigs.zipWithIndex.flatMap { case (config, configIndex) =>
+      val masterInstanceName = s"master_${configIndex + 1}"
       (1 to config.count).map { instanceIndex =>
-        val instanceName = s"instance_${intToBase16(config.hashCode())}_${index + 1}_$instanceIndex"
-        val diskName = s"disk_${intToBase16(config.hashCode())}_${index + 1}_$instanceIndex"
+        val instanceName = if (instanceIndex == 1) {
+          masterInstanceName
+        } else {
+          s"slave_${configIndex + 1}_$instanceIndex"
+        }
+        val diskName = s"disk_${intToBase16(config.hashCode())}_${configIndex + 1}_$instanceIndex"
         val disk = YandexComputeDisk(resourceName = diskName, size = Some(config.diskSize), `type` = Some("network-ssd"), zone = Some("ru-central1-a"), imageId = Some(image.id))
         val bootDisk = BootDisk(diskId = disk.id)
         val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)))
         val resources = Resources(cores = config.cores, memory = config.memory)
-        val metadata: Map[String, UnquotedString] = if (index == 0 && instanceIndex == 1) {
+        val metadata: Map[String, UnquotedString] = if (instanceIndex == 1) {
           // Master node
           Map(
-            "ssh-keys" -> UnquotedString(s""""${config.sshKey}""""),
+            "ssh-keys" -> config.sshKey,
             "user-data" ->
               UnquotedString(s"""<<-EOT
-                 |#cloud-config
-                 |runcmd:
-                 |  - curl -sfL https://get.k3s.io | sh -
-                 |EOT""".stripMargin)
+                                |#cloud-config
+                                |runcmd:
+                                |  - curl -sfL https://get.k3s.io | sh -
+                                |EOT""".stripMargin)
           )
         } else {
           // Slave nodes
           Map(
-            "ssh-keys" -> UnquotedString(s""""${config.sshKey}""""),
+            "ssh-keys" -> config.sshKey,
             "user-data" ->
               UnquotedString(s"""<<-EOT
-                 |#cloud-config
-                 |runcmd:
-                 |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$instanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
-                 |EOT""".stripMargin)
+                                |#cloud-config
+                                |runcmd:
+                                |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
+                                |EOT""".stripMargin)
           )
         }
 
@@ -73,8 +74,8 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
           platformId = Some("standard-v1")
         ) :: disk :: Nil
       }
-    }
-  }.flatten
+    }.flatten
+  }
 }
 
 trait Cluster {
