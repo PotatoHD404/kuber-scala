@@ -117,7 +117,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List("curl -sfL https://get.k3s.io | sh -"))
+            runcmd = Some(List(s"curl -sfL https://get.k3s.io | sh -s - server --token \"$k3sToken\""))
           )
         } else {
           CloudConfig(
@@ -160,7 +160,7 @@ trait Cluster {
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
 }
 
-case class Instance(name: String, externalIp: String)
+case class Instance(name: String, externalIp: String, internalIp: String)
 
 case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
@@ -274,7 +274,7 @@ case class YandexCluster[
           resource.instances.flatMap { instance =>
             instance.attributes.network_interface.map { interfaces =>
               interfaces.map { interface =>
-                Instance(resource.name, interface.nat_ip_address)
+                Instance(resource.name, interface.nat_ip_address, interface.ip_address)
               }
             }
           }
@@ -289,6 +289,7 @@ case class YandexCluster[
     instances.foreach { instance =>
       println(s"Имя: ${instance.name}")
       println(s"Внешний IP-адрес: ${instance.externalIp}")
+      println(s"Внутренний IP-адрес: ${instance.internalIp}")
       println("------------------------")
     }
   }
