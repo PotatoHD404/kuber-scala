@@ -1,5 +1,7 @@
 package terraform.kubenetes_clusters
 
+import io.circe.{Decoder, HCursor}
+import io.circe.jawn.decode
 import terraform.providers.yandex.datasources.yandex_compute_image.YandexComputeImage
 import terraform.providers.yandex.resources.yandex_compute_disk.YandexComputeDisk
 import terraform.providers.yandex.resources.yandex_compute_instance.{BootDisk, NetworkInterface, Resources, YandexComputeInstance}
@@ -155,10 +157,14 @@ trait Cluster {
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
 }
 
+case class Instance(name: String, externalIp: String)
+
 case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
   T2 <: BackendResource,
 ](provider: T1, backend: Option[T2] = None, k3sToken: String, var vmConfigs: List[VMConfig]) extends Cluster {
+
+  var instances: List[Instance] = List.empty
 
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
     val image = YandexComputeImage("family-images-linux", family = Some("ubuntu-2004-lts"))
@@ -242,5 +248,57 @@ case class YandexCluster[
       successMessage = "Terraform apply completed successfully.",
       errorMessage = "Error applying Terraform configuration"
     )
+
+    readTerraformState()
+    printInstances()
+  }
+
+  implicit val anyDecoder: Decoder[Any] = (c: HCursor) => Try(c.value.toString).toEither.left.map(err =>
+    io.circe.DecodingFailure(err.getMessage, c.history)
+  )
+
+  implicit val mapDecoder: Decoder[Map[String, Any]] = Decoder.decodeMap[String, Any]
+
+  def readTerraformState(): Unit = {
+    val tfstateJson = Using.resource(Source.fromFile("terraform.tfstate")) { source =>
+      source.mkString
+    }
+
+    val tfstate = decode[Map[String, Any]](tfstateJson) match {
+      case Right(state) => state
+      case Left(error) => throw new Exception(s"Invalid JSON: $error")
+    }
+
+    instances = tfstate.get("resources").toList.flatMap {
+      case resources: List[Map[String, Any]] =>
+        resources.collect {
+          case resource if resource.get("type").contains("yandex_compute_instance") =>
+            val name = resource.get("name").map(_.toString).getOrElse("")
+            val externalIp = resource.get("instances").toList.flatMap {
+              case instances: List[Map[String, Any]] =>
+                instances.flatMap { instance =>
+                  instance.get("attributes").toList.flatMap {
+                    case attributes: Map[String, Any] =>
+                      attributes.get("network_interface").toList.flatMap {
+                        case interfaces: List[Map[String, Any]] =>
+                          interfaces.flatMap(_.get("nat_ip_address"))
+                      }
+                  }
+                }.headOption.map(_.toString)
+            }.headOption.getOrElse("")
+
+            Instance(name, externalIp)
+        }
+      case _ => List.empty
+    }
+  }
+
+  def printInstances(): Unit = {
+    println("Созданные экземпляры:")
+    instances.foreach { instance =>
+      println(s"Имя: ${instance.name}")
+      println(s"Внешний IP-адрес: ${instance.externalIp}")
+      println("------------------------")
+    }
   }
 }
