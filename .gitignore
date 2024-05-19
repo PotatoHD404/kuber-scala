@@ -17,3 +17,7 @@
 .env
 terraformOutput.tf
 /.terraform/
+
+id_rsa.pub
+
+.terraform.lock.hcl

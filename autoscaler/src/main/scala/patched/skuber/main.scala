@@ -42,6 +42,12 @@ def envOrNone(name: String): Option[String] = {
   Option(System.getenv(name)).orElse(Option(System.getProperty(name)))
 }
 
+def envOrError(name: String): String = {
+  Option(System.getenv(name))
+    .orElse(Option(System.getProperty(name)))
+    .getOrElse(throw new NoSuchElementException(s"No environment variable or system property found for '$name'"))
+}
+
 @main
 def main(): Unit = {
 
@@ -67,8 +73,8 @@ def main(): Unit = {
   )
 
   val terraformFilePath = "terraformOutput.tf"
-
-  implicit val cluster: Cluster = YandexCluster(provider, vmConfigs = vmConfigs)
+  val k3sToken = envOrError("K3S_TOKEN")
+  implicit val cluster: Cluster = YandexCluster(provider, vmConfigs = vmConfigs, k3sToken = k3sToken)
 
 
   try {
@@ -79,21 +85,21 @@ def main(): Unit = {
     val checkResourceUsageAndScaleIO = checkResourceUsageAndScale()
     val scheduledCheck = IO.sleep(checkInterval) *> checkResourceUsageAndScaleIO.foreverM
 
-//    for {
-//      nodes <- k8s.list[NodeList]().toIO
-//      namespaces <- k8s.list[NamespaceList]().toIO
-//      pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
-//      events <- k8s.list[EventList]().toIO
-//      info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
-//
-//      // Cordon the node
-//      _ <- nodeNames.traverse(cordonNode)
-//
-//      // Drain the node
-//      _ <- drainNodes(nodeNames, gracePeriod)
-//
-//      // Other logic...
-//    } yield ExitCode.Success
+    //    for {
+    //      nodes <- k8s.list[NodeList]().toIO
+    //      namespaces <- k8s.list[NamespaceList]().toIO
+    //      pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
+    //      events <- k8s.list[EventList]().toIO
+    //      info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
+    //
+    //      // Cordon the node
+    //      _ <- nodeNames.traverse(cordonNode)
+    //
+    //      // Drain the node
+    //      _ <- drainNodes(nodeNames, gracePeriod)
+    //
+    //      // Other logic...
+    //    } yield ExitCode.Success
   }
   catch {
     case e: Exception => throw e

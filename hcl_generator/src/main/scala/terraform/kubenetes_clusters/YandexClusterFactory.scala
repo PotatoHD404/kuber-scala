@@ -148,7 +148,7 @@ case class YandexCluster[
         case Success(_) =>
           println(successMessage)
         case Failure(ex) =>
-          println(s"$errorMessage: ${ex.getMessage}")
+          throw Error(s"$errorMessage: ${ex.getMessage}")
       }
     }
 
