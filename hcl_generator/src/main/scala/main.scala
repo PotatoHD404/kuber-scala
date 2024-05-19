@@ -55,8 +55,9 @@ def main(): Unit = {
   )
 
   val terraformFilePath = "terraformOutput.tf"
+  val k3sToken = envOrError("K3S_TOKEN")
 
-  val cluster = YandexCluster(provider, vmConfigs = vmConfigs)
+  val cluster = YandexCluster(provider, vmConfigs = vmConfigs, k3sToken = k3sToken)
   cluster.applyTerraformConfig(terraformFilePath)
 
   // Увеличить количество виртуальных машин на 1

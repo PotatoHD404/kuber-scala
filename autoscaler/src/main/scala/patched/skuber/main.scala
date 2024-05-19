@@ -72,7 +72,8 @@ def main(): Unit = {
   )
 
   val terraformFilePath = "terraformOutput.tf"
-  implicit val cluster: Cluster = YandexCluster(provider, vmConfigs = vmConfigs)
+  val k3sToken = envOrError("K3S_TOKEN")
+  implicit val cluster: Cluster = YandexCluster(provider, vmConfigs = vmConfigs, k3sToken = k3sToken)
 
 
   try {
