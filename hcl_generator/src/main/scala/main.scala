@@ -51,7 +51,6 @@ def main(): Unit = {
       cores = 2,
       memory = 4,
       diskSize = 20,
-      sshKey = "ubuntu:${file(\"./id_rsa.pub\")}"
     )
   )
 

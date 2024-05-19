@@ -11,6 +11,7 @@ import terraform.{BackendResource, InfrastructureResource, ProviderSettings, Unq
 import terraform.providers.yandex.{Yandex, YandexProviderConfig}
 
 import java.io.PrintWriter
+import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 import sys.process.stringToProcess
 
@@ -19,16 +20,66 @@ case class VMConfig(
                      cores: Int,
                      memory: Int,
                      diskSize: Int,
-                     sshKey: String
                    )
 
 def intToBase16(value: Int): String = {
   f"$value%x"
 }
 
+case class CloudConfig(
+                        sshPwauth: Boolean = false,
+                        users: List[UserConfig],
+                        runcmd: Option[List[String]] = None
+                      ) {
+  def toHCL: UnquotedString = {
+    val sb = new StringBuilder
+    sb.append("<<-EOT\n")
+    sb.append("#cloud-config\n\n")
+    sb.append(s"ssh_pwauth: ${if (sshPwauth) "yes" else "no"}\n\n")
+    sb.append("users:\n")
+    users.foreach { user =>
+      sb.append(s"  - name: ${user.name}\n")
+      sb.append(s"    gecos: ${user.gecos}\n")
+      sb.append(s"    groups: ${user.groups.mkString(", ")}\n")
+      sb.append(s"    shell: ${user.shell}\n")
+      sb.append(s"    sudo: ${user.sudo}\n")
+      sb.append("    ssh_authorized_keys:\n")
+      user.sshAuthorizedKeys.foreach { key =>
+        sb.append(s"      - $key\n")
+      }
+      sb.append("\n")
+    }
+    runcmd.foreach { cmds =>
+      sb.append("runcmd:\n")
+      cmds.foreach { cmd =>
+        sb.append(s"  - $cmd\n")
+      }
+    }
+    sb.append("EOT")
+    UnquotedString(sb.toString())
+  }
+}
+
+case class UserConfig(
+                       name: String,
+                       gecos: String,
+                       groups: List[String],
+                       shell: String,
+                       sudo: String,
+                       sshAuthorizedKeys: List[String]
+                     )
+
 
 case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, securityGroup: YandexVpcSecurityGroup, vmConfigs: List[VMConfig]) {
   def create(k3sToken: String): List[InfrastructureResource[Yandex]] = {
+    val sshKey = {
+      val source = Source.fromFile("id_rsa.pub")
+      try {
+        source.getLines().mkString
+      } finally {
+        source.close()
+      }
+    }
     vmConfigs.zipWithIndex.flatMap { case (config, configIndex) =>
       val masterInstanceName = s"master-${configIndex + 1}"
       (1 to config.count).map { instanceIndex =>
@@ -48,31 +99,40 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
           externalIpv4Address = Some(List(ExternalIpv4Address(zoneId = Some("ru-central1-a"))))
         )
 
-        val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)), natIpAddress = Some(UnquotedString(s"yandex_vpc_address.${vpcAddress.resourceName}.external_ipv4_address[0].address")))
+        val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)), nat = Some(true), natIpAddress = Some(UnquotedString(s"yandex_vpc_address.${vpcAddress.resourceName}.external_ipv4_address[0].address")))
         val resources = Resources(cores = config.cores, memory = config.memory)
-        val metadata: Map[String, UnquotedString] = if (instanceIndex == 1) {
-          Map(
-            "ssh-keys" -> config.sshKey,
-            "user-data" ->
-              UnquotedString(
-                s"""<<-EOT
-                   |#cloud-config
-                   |runcmd:
-                   |  - curl -sfL https://get.k3s.io | sh -
-                   |EOT""".stripMargin)
+
+        val cloudConfig = if (instanceIndex == 1) {
+          CloudConfig(
+            users = List(
+              UserConfig(
+                name = "ubuntu",
+                gecos = "ubuntu",
+                groups = List("sudo"),
+                shell = "/bin/bash",
+                sudo = "ALL=(ALL) NOPASSWD:ALL",
+                sshAuthorizedKeys = List(sshKey)
+              )
+            ),
+            runcmd = Some(List("curl -sfL https://get.k3s.io | sh -"))
           )
         } else {
-          Map(
-            "ssh-keys" -> config.sshKey,
-            "user-data" ->
-              UnquotedString(
-                s"""<<-EOT
-                   |#cloud-config
-                   |runcmd:
-                   |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
-                   |EOT""".stripMargin)
+          CloudConfig(
+            users = List(
+              UserConfig(
+                name = "ubuntu",
+                gecos = "ubuntu",
+                groups = List("sudo"),
+                shell = "/bin/bash",
+                sudo = "ALL=(ALL) NOPASSWD:ALL",
+                sshAuthorizedKeys = List(sshKey)
+              )
+            ),
+            runcmd = Some(List(s"curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -"))
           )
         }
+
+        val metadata = Map("user-data" -> cloudConfig.toHCL)
 
         YandexComputeInstance(
           resourceName = instanceName,
@@ -80,7 +140,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
           networkInterface = List(networkInterface),
           resources = resources,
           metadata = Some(metadata),
-          platformId = Some("standard-v1"),
+          platformId = Some("standard-v3"),
           name = Some(instanceName),
           description = Some(s"VM $instanceName")
         ) :: disk :: vpcAddress :: Nil
@@ -113,6 +173,7 @@ case class YandexCluster[
         Ingress(protocol = "TCP", port = Some(6443), v4CidrBlocks = "0.0.0.0/0" :: Nil),
         Ingress(protocol = "TCP", port = Some(10250), v4CidrBlocks = "0.0.0.0/0" :: Nil),
         Ingress(protocol = "TCP", fromPort = Some(2379), toPort = Some(2380), v4CidrBlocks = "0.0.0.0/0" :: Nil),
+        Ingress(protocol = "TCP", fromPort = Some(22), toPort = Some(22), v4CidrBlocks = "0.0.0.0/0" :: Nil),
         Ingress(protocol = "UDP", fromPort = Some(8472), toPort = Some(8472), v4CidrBlocks = "0.0.0.0/0" :: Nil)
       )),
       egress = Some(Set(
