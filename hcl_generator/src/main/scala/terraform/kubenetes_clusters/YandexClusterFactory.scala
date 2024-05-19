@@ -9,13 +9,14 @@ import terraform.providers.yandex.resources.yandex_vpc_address.{ExternalIpv4Addr
 import terraform.providers.yandex.resources.yandex_vpc_network.YandexVpcNetwork
 import terraform.providers.yandex.resources.yandex_vpc_security_group.{Egress, Ingress, YandexVpcSecurityGroup}
 import terraform.providers.yandex.resources.yandex_vpc_subnet.YandexVpcSubnet
-import terraform.{BackendResource, InfrastructureResource, ProviderSettings, UnquotedString}
+import terraform.{BackendResource, InfrastructureResource, ProviderSettings, State, UnquotedString}
 import terraform.providers.yandex.{Yandex, YandexProviderConfig}
 
 import java.io.PrintWriter
 import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 import sys.process.stringToProcess
+import terraform.Decoders.stateDecoder
 
 case class VMConfig(
                      count: Int,
@@ -153,7 +154,9 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
 
 trait Cluster {
   def upscale(n: Int): Unit
+
   def downscale(n: Int): Unit
+
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
 }
 
@@ -264,32 +267,20 @@ case class YandexCluster[
       source.mkString
     }
 
-    val tfstate = decode[Map[String, Any]](tfstateJson) match {
-      case Right(state) => state
-      case Left(error) => throw new Exception(s"Invalid JSON: $error")
-    }
-
-    instances = tfstate.get("resources").toList.flatMap {
-      case resources: List[Map[String, Any]] =>
-        resources.collect {
-          case resource if resource.get("type").contains("yandex_compute_instance") =>
-            val name = resource.get("name").map(_.toString).getOrElse("")
-            val externalIp = resource.get("instances").toList.flatMap {
-              case instances: List[Map[String, Any]] =>
-                instances.flatMap { instance =>
-                  instance.get("attributes").toList.flatMap {
-                    case attributes: Map[String, Any] =>
-                      attributes.get("network_interface").toList.flatMap {
-                        case interfaces: List[Map[String, Any]] =>
-                          interfaces.flatMap(_.get("nat_ip_address"))
-                      }
-                  }
-                }.headOption.map(_.toString)
-            }.headOption.getOrElse("")
-
-            Instance(name, externalIp)
-        }
-      case _ => List.empty
+    val result = decode[State](tfstateJson)
+    result match {
+      case Right(state) => // Успешный парсинг
+        instances = state.resources.flatMap { resource =>
+          resource.instances.flatMap { instance =>
+            instance.attributes.network_interface.map { interfaces =>
+              interfaces.map { interface =>
+                Instance(resource.name, interface.nat_ip_address)
+              }
+            }
+          }
+        }.flatten
+      case Left(error) => // Ошибка парсинга
+        println(s"Ошибка парсинга JSON: ${error.getMessage}")
     }
   }
 
