@@ -3,6 +3,7 @@ package terraform.kubenetes_clusters
 import terraform.providers.yandex.datasources.yandex_compute_image.YandexComputeImage
 import terraform.providers.yandex.resources.yandex_compute_disk.YandexComputeDisk
 import terraform.providers.yandex.resources.yandex_compute_instance.{BootDisk, NetworkInterface, Resources, YandexComputeInstance}
+import terraform.providers.yandex.resources.yandex_vpc_address.{ExternalIpv4Address, YandexVpcAddress}
 import terraform.providers.yandex.resources.yandex_vpc_network.YandexVpcNetwork
 import terraform.providers.yandex.resources.yandex_vpc_security_group.{Egress, Ingress, YandexVpcSecurityGroup}
 import terraform.providers.yandex.resources.yandex_vpc_subnet.YandexVpcSubnet
@@ -29,39 +30,47 @@ def intToBase16(value: Int): String = {
 case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, securityGroup: YandexVpcSecurityGroup, vmConfigs: List[VMConfig]) {
   def create(k3sToken: String): List[InfrastructureResource[Yandex]] = {
     vmConfigs.zipWithIndex.flatMap { case (config, configIndex) =>
-      val masterInstanceName = s"master_${configIndex + 1}"
+      val masterInstanceName = s"master-${configIndex + 1}"
       (1 to config.count).map { instanceIndex =>
         val instanceName = if (instanceIndex == 1) {
           masterInstanceName
         } else {
-          s"slave_${configIndex + 1}_$instanceIndex"
+          s"slave-${configIndex + 1}-$instanceIndex"
         }
-        val diskName = s"disk_${intToBase16(config.hashCode())}_${configIndex + 1}_$instanceIndex"
-        val disk = YandexComputeDisk(resourceName = diskName, size = Some(config.diskSize), `type` = Some("network-ssd"), zone = Some("ru-central1-a"), imageId = Some(image.id))
+        val diskName = s"disk-${intToBase16(config.hashCode())}-${configIndex + 1}-$instanceIndex"
+        val disk = YandexComputeDisk(resourceName = diskName, size = Some(config.diskSize), `type` = Some("network-ssd"), zone = Some("ru-central1-a"), imageId = Some(image.id), name = Some(instanceName), description = Some(s"Диск для $instanceName"))
         val bootDisk = BootDisk(diskId = disk.id)
-        val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)))
+
+        val vpcAddress = YandexVpcAddress(
+          resourceName = s"address-$instanceName",
+          name = Some(instanceName),
+          description = Some(s"Адрес для $instanceName"),
+          externalIpv4Address = Some(List(ExternalIpv4Address(zoneId = Some("ru-central1-a"))))
+        )
+
+        val networkInterface = NetworkInterface(subnetId = subnet.id, securityGroupIds = Some(Set(securityGroup.id)), natIpAddress = Some(UnquotedString(s"yandex_vpc_address.${vpcAddress.resourceName}.external_ipv4_address[0].address")))
         val resources = Resources(cores = config.cores, memory = config.memory)
         val metadata: Map[String, UnquotedString] = if (instanceIndex == 1) {
-          // Master node
           Map(
             "ssh-keys" -> config.sshKey,
             "user-data" ->
-              UnquotedString(s"""<<-EOT
-                                |#cloud-config
-                                |runcmd:
-                                |  - curl -sfL https://get.k3s.io | sh -
-                                |EOT""".stripMargin)
+              UnquotedString(
+                s"""<<-EOT
+                   |#cloud-config
+                   |runcmd:
+                   |  - curl -sfL https://get.k3s.io | sh -
+                   |EOT""".stripMargin)
           )
         } else {
-          // Slave nodes
           Map(
             "ssh-keys" -> config.sshKey,
             "user-data" ->
-              UnquotedString(s"""<<-EOT
-                                |#cloud-config
-                                |runcmd:
-                                |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
-                                |EOT""".stripMargin)
+              UnquotedString(
+                s"""<<-EOT
+                   |#cloud-config
+                   |runcmd:
+                   |  - curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -
+                   |EOT""".stripMargin)
           )
         }
 
@@ -71,8 +80,10 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
           networkInterface = List(networkInterface),
           resources = resources,
           metadata = Some(metadata),
-          platformId = Some("standard-v1")
-        ) :: disk :: Nil
+          platformId = Some("standard-v1"),
+          name = Some(instanceName),
+          description = Some(s"VM $instanceName")
+        ) :: disk :: vpcAddress :: Nil
       }
     }.flatten
   }
@@ -90,13 +101,13 @@ case class YandexCluster[
 ](provider: T1, backend: Option[T2] = None, k3sToken: String, var vmConfigs: List[VMConfig]) extends Cluster {
 
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
-    val image = YandexComputeImage("family_images_linux", family = Some("ubuntu-2004-lts"))
-    val network = YandexVpcNetwork("my_vpc_network")
-    val subnet = YandexVpcSubnet("my_subnet", networkId = network.id, v4CidrBlocks = "10.5.0.0/24" :: Nil)
+    val image = YandexComputeImage("family-images-linux", family = Some("ubuntu-2004-lts"))
+    val network = YandexVpcNetwork("my-vpc-network", name = Some("my-vpc-network"), description = Some("My VPC network"))
+    val subnet = YandexVpcSubnet("my-subnet", networkId = network.id, v4CidrBlocks = "10.5.0.0/24" :: Nil, name = Some("my-subnet"), description = Some("Моя подсеть"))
     val securityGroup = YandexVpcSecurityGroup(
-      "k3s_security_group",
+      "k3s-security-group",
       name = Some("k3s-security-group"),
-      description = Some("Security group for k3s cluster"),
+      description = Some("Группа безопасности для k3s кластера"),
       networkId = network.id,
       ingress = Some(Set(
         Ingress(protocol = "TCP", port = Some(6443), v4CidrBlocks = "0.0.0.0/0" :: Nil),
