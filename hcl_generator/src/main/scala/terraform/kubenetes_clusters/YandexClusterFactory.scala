@@ -17,6 +17,9 @@ import scala.io.Source
 import scala.util.{Failure, Success, Try, Using}
 import sys.process.stringToProcess
 import terraform.Decoders.stateDecoder
+import terraform.HCLImplicits.StringToHCL
+
+import scala.::
 
 case class VMConfig(
                      count: Int,
@@ -72,9 +75,50 @@ case class UserConfig(
                        sshAuthorizedKeys: List[String]
                      )
 
+case class NullResource(
+                         resourceName: String,
+                         dependsOn: List[String],
+                         triggers: Map[String, String],
+                         connection: RemoteExecConnection,
+                         provisioner: RemoteExecProvisioner
+                       ) extends InfrastructureResource[Yandex] {
+  def toHCL: String = s"resource \"null_resource\" \"${this.resourceName}\" {\n" +
+    List[Option[String]](
+      Some(this.dependsOn.map(d => s"\"$d\"").mkString("depends_on = [", ", ", "]")),
+      Some(this.triggers.map { case (key, value) => s"$key = ${value.toHCL}" }.mkString("triggers = {\n", "\n", "\n}")),
+      Some("connection {\n" + this.connection.toHCL + "\n}"),
+      Some("provisioner \"remote-exec\" {\n" + this.provisioner.toHCL + "\n}")
+    ).flatten.mkString("\n")
+    + "\n}"
+}
+
+case class RemoteExecConnection(
+                                 `type`: String,
+                                 user: String,
+                                 privateKey: String,
+                                 host: UnquotedString
+                               ) {
+  def toHCL: String =
+    List[Option[String]](
+      Some(s"type = ${`type`.toHCL}"),
+      Some(s"user = ${user.toHCL}"),
+      Some(s"private_key = ${privateKey.toHCL}"),
+      Some(s"host = ${host.toHCL}")
+    ).flatten.mkString("\n")
+}
+
+case class RemoteExecProvisioner(
+                                  inline: List[String]
+                                ) {
+  def toHCL: String =
+    List[Option[String]](
+      Some(inline.map(cmd => s"\"$cmd\"").mkString("inline = [", ", ", "]"))
+    ).flatten.mkString("\n")
+}
+
 
 case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, securityGroup: YandexVpcSecurityGroup, vmConfigs: List[VMConfig]) {
-  def create(k3sToken: String): List[InfrastructureResource[Yandex]] = {
+  def create(): List[InfrastructureResource[Yandex]] = {
     val sshKey = {
       val source = Source.fromFile("id_rsa.pub")
       try {
@@ -117,7 +161,10 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List(s"curl -sfL https://get.k3s.io | sh -s - server --token \"$k3sToken\""))
+            runcmd = Some(List(
+              "curl -sfL https://get.k3s.io | sh -s - server",
+              "cat /var/lib/rancher/k3s/server/node-token"
+            ))
           )
         } else {
           CloudConfig(
@@ -131,13 +178,13 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List(s"curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -"))
+            runcmd = Some(List(s"curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$${null_resource.get_node_token.triggers.node_token} sh -"))
           )
         }
 
         val metadata = Map("user-data" -> cloudConfig.toHCL)
 
-        YandexComputeInstance(
+        val instance = YandexComputeInstance(
           resourceName = instanceName,
           bootDisk = bootDisk,
           networkInterface = List(networkInterface),
@@ -146,7 +193,28 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
           platformId = Some("standard-v3"),
           name = Some(instanceName),
           description = Some(s"VM $instanceName")
-        ) :: disk :: vpcAddress :: Nil
+        )
+
+        val nullResource = if (instanceIndex == 1) {
+          Some(NullResource(
+            resourceName = "get_node_token",
+            dependsOn = List(s"yandex_compute_instance.$masterInstanceName"),
+            triggers = Map("node_token" -> "null_resource.get_node_token.stdout"),
+            connection = RemoteExecConnection(
+              `type` = "ssh",
+              user = "ubuntu",
+              privateKey = "id_rsa",
+              host = UnquotedString(s"yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address")
+            ),
+            provisioner = RemoteExecProvisioner(
+              inline = List("sudo cat /var/lib/rancher/k3s/server/node-token")
+            )
+          ))
+        } else {
+          None
+        }
+
+        instance :: disk :: vpcAddress :: nullResource.toList
       }
     }.flatten
   }
@@ -165,7 +233,7 @@ case class Instance(name: String, externalIp: String, internalIp: String)
 case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
   T2 <: BackendResource,
-](provider: T1, backend: Option[T2] = None, k3sToken: String, var vmConfigs: List[VMConfig]) extends Cluster {
+](provider: T1, backend: Option[T2] = None, var vmConfigs: List[VMConfig]) extends Cluster {
 
   var instances: List[Instance] = List.empty
 
@@ -190,7 +258,7 @@ case class YandexCluster[
       ))
     )
     val vmFactory = YandexVMFactory(image, subnet, securityGroup, vmConfigs)
-    val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: securityGroup :: vmFactory.create(k3sToken)
+    val resources: List[InfrastructureResource[Yandex]] = image :: network :: subnet :: securityGroup :: vmFactory.create()
     YandexProviderConfig(provider, backend, resources)
   }
 
