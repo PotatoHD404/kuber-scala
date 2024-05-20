@@ -117,7 +117,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List(s"curl -sfL https://get.k3s.io | sh -s - server --token \"$k3sToken\""))
+            runcmd = Some(List(s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken"))
           )
         } else {
           CloudConfig(

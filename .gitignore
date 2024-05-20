@@ -27,3 +27,5 @@ id_rsa.pub
 .terraform.tfstate.lock.info
 /terraform.tfstate.backup
 /terraform1.tfstate.json
+
+id_rsa
