@@ -1,3 +1,5 @@
+import sbtassembly.AssemblyKeys.{assembly, assemblyMergeStrategy}
+
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.2.2"
 
@@ -34,7 +36,14 @@ lazy val autoscaler = (project in file("autoscaler"))
       "org.typelevel" %% "cats-effect" % "3.5.0",
       "co.fs2" %% "fs2-core" % "3.6.1",
       "io.github.hagay3" %% "skuber" % "3.0.6"
-    )
+    ),
+    // Assembly settings
+    assembly / mainClass := Some("patched.skuber.main"), // Replace with your main class
+    assembly / assemblyJarName := "autoscaler.jar",
+    assembly / assemblyMergeStrategy := {
+      case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case _ => MergeStrategy.first
+    }
   )
 
 lazy val root = (project in file("."))
