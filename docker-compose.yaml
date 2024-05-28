@@ -1,0 +1,5 @@
+version: '3'
+services:
+  cluster-creator:
+    image: potatohd/cluster-creator
+    container_name: cluster-creator
