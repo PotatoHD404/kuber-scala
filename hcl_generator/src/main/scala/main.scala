@@ -45,6 +45,7 @@ def main(): Unit = {
     token = envOrNone("YC_TOKEN"),
     zone = envOrNone("YC_ZONE")
   )
+//  val backend = Backend
   val vmConfigs = List(
     VMConfig(
       count = 2,

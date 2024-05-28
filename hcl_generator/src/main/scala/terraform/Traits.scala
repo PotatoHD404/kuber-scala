@@ -18,21 +18,31 @@ trait LocalVarResource extends TerraformResource
 
 trait OutputVarResource extends TerraformResource
 
-//trait TerraformResourceHCL[T <: InfrastructureResource[_]] {
-//  def toHCL(resource: T): String
-//}
+case class S3Backend(
+                      bucketName: String,
+                      stateFileKey: String,
+                      region: String,
+                      s3Endpoint: String,
+                      skipRegionValidation: Boolean = true,
+                      skipCredentialsValidation: Boolean = true,
+                      skipRequestingAccountId: Boolean = true,
+                      skipS3Checksum: Boolean = true
+                    ) extends BackendResource {
+  def toHCL: String =
+    s"""backend "s3" {
+       |  endpoints = {
+       |    s3 = "$s3Endpoint"
+       |  }
+       |  bucket = "$bucketName"
+       |  region = "$region"
+       |  key = "$stateFileKey"
+       |  skip_region_validation = $skipRegionValidation
+       |  skip_credentials_validation = $skipCredentialsValidation
+       |  skip_requesting_account_id = $skipRequestingAccountId
+       |  skip_s3_checksum = $skipS3Checksum
+       |}""".stripMargin
+}
 
-//object TerraformResourceHCL {
-//  def apply[T <: InfrastructureResource[_]](implicit hcl: TerraformResourceHCL[T]): TerraformResourceHCL[T] = hcl
-//}
-//
-//case class Network[T <: ProviderType](name: String, cidr: String)(implicit hcl: TerraformResourceHCL[Network[T]]) extends InfrastructureResource[T] {
-//  def toHCL: String = hcl.toHCL(this)
-//}
-//
-//case class VM[T <: ProviderType](name: String, network: Network[T])(implicit hcl: TerraformResourceHCL[VM[T]]) extends InfrastructureResource[T] {
-//  def toHCL: String = hcl.toHCL(this)
-//}
 
 case class ProviderConfig[
   A <: ProviderType,
@@ -40,17 +50,17 @@ case class ProviderConfig[
   T2 <: BackendResource,
   T3 <: InfrastructureResource[A]
 ]
-(provider: T1, backend: Option[T2], resources: List[T3], providerName: Option[String] = None, source: Option[String] = None, version: Option[String] = None, inputVars: List[InputVarResource] = List(), localVars: List[LocalVarResource] = List(), outputVars: List[OutputVarResource] = List()) extends TerraformResource {
+(provider: T1, backend: Option[T2], resources: List[T3], providerName: String, source: String, version: String, inputVars: List[InputVarResource] = List(), localVars: List[LocalVarResource] = List(), outputVars: List[OutputVarResource] = List()) extends TerraformResource {
   def toHCL: String = {
     val allResources = provider +: backend.toList ++: resources ++: inputVars ++: localVars ++: outputVars
     s"""
        |terraform {
        |  required_providers {
-       |    ${providerName.getOrElse("")} = {
-       |      source = "${source.getOrElse("")}"
+       |    $providerName = {
+       |      source = "$source"
        |    }
        |  }
-       |  required_version = "${version.getOrElse("")}"
+       |  required_version = "$version"
        |}
        |
        |${allResources.map(_.toHCL).mkString("\n\n")}

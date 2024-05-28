@@ -1,8 +1,8 @@
 # Build stage
-FROM openjdk:11-jdk AS build
+FROM openjdk:11-jdk-slim AS build
 
-# Install Scala 3 and sbt
-RUN apt-get update && apt-get install -y curl gzip
+# Install necessary dependencies
+RUN apt-get update && apt-get install -y curl gzip wget unzip
 
 # Download Coursier CLI binary and decompress it
 RUN curl -fLo /tmp/cs.gz https://github.com/coursier/coursier/releases/download/v2.1.10/cs-x86_64-pc-linux.gz \
@@ -23,10 +23,32 @@ COPY . /app
 RUN sbt "autoscaler/assembly"
 
 # Run stage
-FROM openjdk:11-jre
+FROM openjdk:11-jre-slim
 
 WORKDIR /app
 
 COPY --from=build /app/autoscaler/target/scala-3.2.2/autoscaler.jar /app/autoscaler.jar
+
+# Download and install Terraform
+RUN apt-get update && apt-get install -y wget unzip && \
+    wget https://releases.hashicorp.com/terraform/1.4.6/terraform_1.4.6_linux_amd64.zip && \
+    unzip terraform_1.4.6_linux_amd64.zip && \
+    mv terraform /usr/local/bin/ && \
+    rm terraform_1.4.6_linux_amd64.zip && \
+    apt-get remove -y wget unzip && \
+    apt-get autoremove -y && \
+    rm -rf /var/lib/apt/lists/*
+
+# Create ~/.terraformrc file with the specified content
+RUN mkdir -p ~/.terraform.d && \
+    echo 'provider_installation {' > ~/.terraformrc && \
+    echo '  network_mirror {' >> ~/.terraformrc && \
+    echo '    url = "https://terraform-mirror.yandexcloud.net/"' >> ~/.terraformrc && \
+    echo '    include = ["registry.terraform.io/*/*"]' >> ~/.terraformrc && \
+    echo '  }' >> ~/.terraformrc && \
+    echo '  direct {' >> ~/.terraformrc && \
+    echo '    exclude = ["registry.terraform.io/*/*"]' >> ~/.terraformrc && \
+    echo '  }' >> ~/.terraformrc && \
+    echo '}' >> ~/.terraformrc
 
 CMD ["java", "-jar", "autoscaler.jar"]
