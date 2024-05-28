@@ -27,7 +27,7 @@ def main(): Unit = {
 
   implicit val k8s: KubernetesClient = k8sInit
   implicit val cluster: YandexCluster[YandexProviderSettings, S3Backend] = createCluster()
-
+  println("Starting autoscaling process")
 
   try {
     val nodeNames = List("multinode-demo-m02")

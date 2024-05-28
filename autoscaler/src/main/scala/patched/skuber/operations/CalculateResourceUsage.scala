@@ -48,12 +48,14 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
       val cpuNeeded = math.ceil((totalCpuUsage / 0.9) - totalCpuCapacity).toInt
       val memoryNeeded = math.ceil((totalMemoryUsage / 0.9) - totalMemoryCapacity).toInt
       val nodesNeeded = math.max(cpuNeeded / 2, memoryNeeded / 4)
+      require(nodesNeeded < 5, "Safety check failed, nodes >= 5")
       cluster.upscale(nodesNeeded)
       cluster.applyTerraformConfig()
     } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5) {
       val cpuExcess = math.floor(totalCpuCapacity - (totalCpuUsage / 0.5)).toInt
       val memoryExcess = math.floor(totalMemoryCapacity - (totalMemoryUsage / 0.5)).toInt
       val nodesExcess = math.min(cpuExcess / 2, memoryExcess / 4)
+      require(nodesExcess < 5, "Safety check failed, nodes >= 5")
       cluster.downscale(nodesExcess)
       cluster.applyTerraformConfig()
     }
