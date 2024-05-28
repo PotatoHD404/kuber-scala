@@ -43,8 +43,7 @@ lazy val autoscaler = (project in file("autoscaler"))
       "co.fs2" %% "fs2-core" % "3.6.1",
       "io.github.hagay3" %% "skuber" % "3.0.6"
     ),
-    // Assembly settings
-    assembly / mainClass := Some("patched.skuber.main"), // Replace with your main class
+    assembly / mainClass := Some("main"),
     assembly / assemblyJarName := "autoscaler.jar",
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard

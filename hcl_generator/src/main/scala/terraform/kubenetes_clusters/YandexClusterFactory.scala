@@ -106,6 +106,15 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
         val resources = Resources(cores = config.cores, memory = config.memory)
 
         val cloudConfig = if (instanceIndex == 1) {
+          val envFileContents = {
+            val source = Source.fromFile(".env")
+            try {
+              source.getLines().mkString("\\n")
+            } finally {
+              source.close()
+            }
+          }
+
           CloudConfig(
             users = List(
               UserConfig(
@@ -117,7 +126,9 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List(s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken",
+            runcmd = Some(List(
+              s"""echo "${envFileContents.replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/.env""",
+              s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken",
               "sudo chown ubuntu:ubuntu /etc/rancher/k3s/k3s.yaml",
               "sudo chmod -R u+r /etc/rancher/k3s/k3s.yaml",
               "echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> /home/ubuntu/.bashrc",
@@ -272,9 +283,7 @@ case class YandexCluster[
   implicit val mapDecoder: Decoder[Map[String, Any]] = Decoder.decodeMap[String, Any]
 
   def readTerraformState(): Unit = {
-    val tfstateJson = Using.resource(Source.fromFile("terraform.tfstate")) { source =>
-      source.mkString
-    }
+    val tfstateJson = "terraform state pull".!!
 
     val result = decode[State](tfstateJson)
     result match {

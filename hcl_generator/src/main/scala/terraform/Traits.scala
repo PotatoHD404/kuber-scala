@@ -23,6 +23,8 @@ case class S3Backend(
                       stateFileKey: String,
                       region: String,
                       s3Endpoint: String,
+                      accessKey: String,
+                      secretKey: String,
                       skipRegionValidation: Boolean = true,
                       skipCredentialsValidation: Boolean = true,
                       skipRequestingAccountId: Boolean = true,
@@ -36,6 +38,8 @@ case class S3Backend(
        |  bucket = "$bucketName"
        |  region = "$region"
        |  key = "$stateFileKey"
+       |  access_key = "$accessKey"
+       |  secret_key = "$secretKey"
        |  skip_region_validation = $skipRegionValidation
        |  skip_credentials_validation = $skipCredentialsValidation
        |  skip_requesting_account_id = $skipRequestingAccountId
@@ -49,10 +53,19 @@ case class ProviderConfig[
   T1 <: ProviderSettings[A],
   T2 <: BackendResource,
   T3 <: InfrastructureResource[A]
-]
-(provider: T1, backend: Option[T2], resources: List[T3], providerName: String, source: String, version: String, inputVars: List[InputVarResource] = List(), localVars: List[LocalVarResource] = List(), outputVars: List[OutputVarResource] = List()) extends TerraformResource {
+](
+   provider: T1,
+   backend: Option[T2],
+   resources: List[T3],
+   providerName: String,
+   source: String,
+   version: String,
+   inputVars: List[InputVarResource] = List(),
+   localVars: List[LocalVarResource] = List(),
+   outputVars: List[OutputVarResource] = List()
+ ) extends TerraformResource {
   def toHCL: String = {
-    val allResources = provider +: backend.toList ++: resources ++: inputVars ++: localVars ++: outputVars
+    val allResources = provider +: resources ++: inputVars ++: localVars ++: outputVars
     s"""
        |terraform {
        |  required_providers {
@@ -60,7 +73,7 @@ case class ProviderConfig[
        |      source = "$source"
        |    }
        |  }
-       |  required_version = "$version"
+       |  ${backend.map(_.toHCL).getOrElse("")}
        |}
        |
        |${allResources.map(_.toHCL).mkString("\n\n")}

@@ -3,6 +3,8 @@ package terraform
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
 
+import scala.io.Source
+import scala.util.{Failure, Try, Using}
 import scala.util.matching.Regex
 
 case class Region(value: String)
@@ -131,4 +133,33 @@ object Decoders {
   implicit val instanceDecoder: Decoder[Instance] = deriveDecoder[Instance]
   implicit val resourceDecoder: Decoder[Resource] = deriveDecoder[Resource]
   implicit val stateDecoder: Decoder[State] = deriveDecoder[State]
+}
+
+object DotenvLoader {
+  def load(dotenvFilePath: String = ".env"): Unit = {
+    Try(Using.resource(Source.fromFile(dotenvFilePath)) { source =>
+      source.getLines().foreach { line =>
+        val cleanLine = line.split("#").head.trim // Removes comments and trims
+        if (cleanLine.nonEmpty) {
+          val Array(key, value) = cleanLine.split("=", 2).map(_.trim)
+          val processedValue = value.stripPrefix("\"").stripSuffix("\"") // Removes surrounding quotes if present
+          System.setProperty(key, processedValue)
+        }
+      }
+    }) match {
+      case Failure(ex) =>
+        println(s"Warning: Failed to load .env file from $dotenvFilePath. ${ex.getMessage}")
+      case _ => // Success, do nothing
+    }
+  }
+}
+
+def envOrNone(name: String): Option[String] = {
+  Option(System.getenv(name)).orElse(Option(System.getProperty(name)))
+}
+
+def envOrError(name: String): String = {
+  Option(System.getenv(name))
+    .orElse(Option(System.getProperty(name)))
+    .getOrElse(throw new NoSuchElementException(s"No environment variable or system property found for '$name'"))
 }
