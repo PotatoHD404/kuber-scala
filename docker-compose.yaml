@@ -3,3 +3,6 @@ services:
   cluster-creator:
     image: potatohd/cluster-creator
     container_name: cluster-creator
+    volumes:
+      - ./.env:/app/.env
+      - ./id_rsa.pub:/app/id_rsa.pub

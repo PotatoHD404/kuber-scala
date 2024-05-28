@@ -27,14 +27,12 @@ FROM openjdk:11-jre-slim
 
 WORKDIR /app
 
-COPY --from=build /app/autoscaler/target/scala-3.2.2/autoscaler.jar /app/autoscaler.jar
-
 # Download and install Terraform
 RUN apt-get update && apt-get install -y wget unzip && \
-    wget https://releases.hashicorp.com/terraform/1.4.6/terraform_1.4.6_linux_amd64.zip && \
-    unzip terraform_1.4.6_linux_amd64.zip && \
+    wget https://releases.hashicorp.com/terraform/1.8.4/terraform_1.8.4_linux_amd64.zip && \
+    unzip terraform_1.8.4_linux_amd64.zip && \
     mv terraform /usr/local/bin/ && \
-    rm terraform_1.4.6_linux_amd64.zip && \
+    rm terraform_1.8.4_linux_amd64.zip && \
     apt-get remove -y wget unzip && \
     apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
@@ -50,5 +48,7 @@ RUN mkdir -p ~/.terraform.d && \
     echo '    exclude = ["registry.terraform.io/*/*"]' >> ~/.terraformrc && \
     echo '  }' >> ~/.terraformrc && \
     echo '}' >> ~/.terraformrc
+
+COPY --from=build /app/autoscaler/target/scala-3.2.2/autoscaler.jar /app/autoscaler.jar
 
 CMD ["java", "-jar", "autoscaler.jar"]

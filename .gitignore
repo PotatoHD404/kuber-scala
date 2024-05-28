@@ -29,3 +29,5 @@ id_rsa.pub
 /terraform1.tfstate.json
 
 id_rsa
+
+cluster.tf

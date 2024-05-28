@@ -14,6 +14,7 @@
 /autoscaler/target/
 .env
 terraformOutput.tf
+cluster.tf
 /.terraform/
 
 id_rsa.pub

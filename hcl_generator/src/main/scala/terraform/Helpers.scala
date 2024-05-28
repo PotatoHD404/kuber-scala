@@ -2,6 +2,9 @@ package terraform
 
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
+import terraform.kubenetes_clusters.{VMConfig, YandexCluster}
+import terraform.providers.yandex.Yandex
+import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import scala.io.Source
 import scala.util.{Failure, Try, Using}
@@ -162,4 +165,37 @@ def envOrError(name: String): String = {
   Option(System.getenv(name))
     .orElse(Option(System.getProperty(name)))
     .getOrElse(throw new NoSuchElementException(s"No environment variable or system property found for '$name'"))
+}
+
+def createCluster(terraformFilePath: String = "cluster.tf"): YandexCluster[YandexProviderSettings, S3Backend] = {
+  DotenvLoader.load()
+  val provider = YandexProviderSettings(
+    cloudId = envOrNone("YC_CLOUD_ID"),
+    folderId = envOrNone("YC_FOLDER_ID"),
+    token = envOrNone("YC_TOKEN"),
+    zone = envOrNone("YC_ZONE")
+  )
+
+  val vmConfigs = List(
+    VMConfig(
+      count = 2,
+      cores = 2,
+      memory = 4,
+      diskSize = 20,
+    )
+  )
+
+  val k3sToken = envOrError("K3S_TOKEN")
+  val backendConfig = Some(
+    S3Backend(
+      bucketName = "autoscaler-bucket",
+      stateFileKey = "terraform.tfstate",
+      region = "ru-central1",
+      s3Endpoint = "https://storage.yandexcloud.net",
+      accessKey = envOrError("S3_ACCESS_KEY"),
+      secretKey = envOrError("S3_SECRET_KEY"),
+    )
+  )
+
+  YandexCluster(provider, backendConfig, vmConfigs = vmConfigs, k3sToken = k3sToken)
 }

@@ -14,7 +14,7 @@ import skuber.api.client.KubernetesClient
 import skuber.json.format.*
 import skuber.{EventList, NamespaceList, NodeList, PodList, k8sInit, toList}
 import patched.skuber.operations.Conversions.toIO
-import terraform.{DotenvLoader, S3Backend, envOrError, envOrNone}
+import terraform.{DotenvLoader, S3Backend, createCluster, envOrError, envOrNone}
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContextExecutor, Future}
@@ -26,36 +26,7 @@ def main(): Unit = {
   implicit val dispatcher: ExecutionContextExecutor = system.dispatcher
 
   implicit val k8s: KubernetesClient = k8sInit
-  DotenvLoader.load()
-  val provider = YandexProviderSettings(
-    cloudId = envOrNone("YC_CLOUD_ID"),
-    folderId = envOrNone("YC_FOLDER_ID"),
-    token = envOrNone("YC_TOKEN"),
-    zone = envOrNone("YC_ZONE")
-  )
-  val vmConfigs = List(
-    VMConfig(
-      count = 2,
-      cores = 2,
-      memory = 4,
-      diskSize = 20,
-    )
-  )
-
-  val terraformFilePath = "terraformOutput.tf"
-  val k3sToken = envOrError("K3S_TOKEN")
-  val backendConfig = Some(
-    S3Backend(
-      bucketName = "autoscaler-bucket",
-      stateFileKey = "terraform.tfstate",
-      region = "ru-central1",
-      s3Endpoint = "https://storage.yandexcloud.net",
-      accessKey = envOrError("S3_ACCESS_KEY"),
-      secretKey = envOrError("S3_SECRET_KEY"),
-    )
-  )
-
-  implicit val cluster: YandexCluster[YandexProviderSettings, S3Backend] = YandexCluster(provider, backendConfig, vmConfigs = vmConfigs, k3sToken = k3sToken)
+  implicit val cluster: YandexCluster[YandexProviderSettings, S3Backend] = createCluster()
 
 
   try {

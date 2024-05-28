@@ -128,6 +128,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
             ),
             runcmd = Some(List(
               s"""echo "${envFileContents.replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/.env""",
+              s"""echo "${sshKey.replace("\n", "\\n").replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/id_rsa.pub""",
               s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken",
               "sudo chown ubuntu:ubuntu /etc/rancher/k3s/k3s.yaml",
               "sudo chmod -R u+r /etc/rancher/k3s/k3s.yaml",
