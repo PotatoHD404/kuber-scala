@@ -129,7 +129,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
             runcmd = Some(List(
               s"""echo "${envFileContents.replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/.env""",
               s"""echo "${sshKey.replace("\n", "\\n").replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/id_rsa.pub""",
-              s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken",
+              s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken --node-external-ip $${yandex_vpc_address.address-$instanceName.external_ipv4_address[0].address}",
               "sudo chown ubuntu:ubuntu /etc/rancher/k3s/k3s.yaml",
               "sudo chmod -R u+r /etc/rancher/k3s/k3s.yaml",
               "echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> /home/ubuntu/.bashrc",
@@ -152,7 +152,9 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
                 sshAuthorizedKeys = List(sshKey)
               )
             ),
-            runcmd = Some(List(s"curl -sfL https://get.k3s.io | K3S_URL=https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 K3S_TOKEN=$k3sToken sh -"))
+            runcmd = Some(List(
+              s"curl -sfL https://get.k3s.io | sh -s - agent --server https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 --token $k3sToken --node-external-ip $${yandex_vpc_address.address-$instanceName.external_ipv4_address[0].address}"
+            ))
           )
         }
 
