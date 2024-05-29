@@ -1,4 +1,4 @@
-version: "3.7"
+version: "3"
 services:
   cluster-creator:
     image: potatohd/cluster-creator
@@ -6,4 +6,29 @@ services:
     volumes:
       - ./.env:/app/.env
       - ./id_rsa.pub:/app/id_rsa.pub
-      - ./cluster.tf:/app/cluster.tf
+      - ./:/app/mnt
+    command: sh -c "java -jar /app/cluster-creator.jar && cp /app/cluster.tf /app/mnt/"
+
+  cluster-destroyer:
+    image: potatohd/cluster-creator
+    container_name: cluster-destroyer
+    volumes:
+      - ./.env:/app/.env
+      - ./id_rsa.pub:/app/id_rsa.pub
+      - ./:/app/mnt
+    command: >
+      sh -c "
+        if [ -f /app/mnt/cluster.tf ]; then
+          cp /app/mnt/cluster.tf /app/
+          terraform init
+          terraform destroy -auto-approve
+          if [ $? -eq 0 ]; then
+            rm -f /app/mnt/cluster.tf
+          else
+            echo 'Terraform destroy failed. cluster.tf not removed.'
+          fi
+        else
+          echo 'Error: cluster.tf not found in /app/mnt'
+          exit 1
+        fi
+      "
