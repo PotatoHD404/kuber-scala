@@ -1,4 +1,5 @@
 import sbtassembly.AssemblyKeys.{assembly, assemblyMergeStrategy}
+import sbtassembly.MergeStrategy
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
 ThisBuild / scalaVersion := "3.2.2"
@@ -28,6 +29,7 @@ lazy val hclGenerator = (project in file("hcl_generator"))
     assembly / assemblyJarName := "cluster-creator.jar",
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case PathList(ps @ _*) if ps.last endsWith ".conf" => MergeStrategy.concat
       case _ => MergeStrategy.first
     }
   )
@@ -47,6 +49,7 @@ lazy val autoscaler = (project in file("autoscaler"))
     assembly / assemblyJarName := "autoscaler.jar",
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard
+      case PathList(ps @ _*) if ps.last endsWith ".conf" => MergeStrategy.concat
       case _ => MergeStrategy.first
     }
   )
