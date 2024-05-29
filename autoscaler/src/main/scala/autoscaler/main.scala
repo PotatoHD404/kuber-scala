@@ -1,10 +1,9 @@
-package patched.skuber
+package autoscaler
 
 import akka.actor.ActorSystem
 import cats.effect.{ExitCode, IO}
 import cats.syntax.all.*
 import patched.skuber.operations.{checkResourceUsageAndScale, cordonNode, drainNodes}
-import terraform.kubenetes_clusters.{Cluster, VMConfig, YandexCluster}
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import scala.io.Source
@@ -14,6 +13,7 @@ import skuber.api.client.KubernetesClient
 import skuber.json.format.*
 import skuber.{EventList, NamespaceList, NodeList, PodList, k8sInit, toList}
 import patched.skuber.operations.Conversions.toIO
+import terraform.kubenetes.clusters.{Cluster, VMConfig, YandexCluster}
 import terraform.{DotenvLoader, S3Backend, createCluster, envOrError, envOrNone}
 
 import scala.concurrent.duration.DurationInt

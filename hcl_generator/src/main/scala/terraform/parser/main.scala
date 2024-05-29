@@ -1,4 +1,4 @@
-package terraform
+package terraform.parser
 
 import io.circe.parser.decode
 import io.circe.generic.auto.*

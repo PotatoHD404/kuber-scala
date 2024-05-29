@@ -1,4 +1,4 @@
-package terraform.kubenetes_clusters
+package terraform.kubenetes.clusters
 
 import io.circe.{Decoder, HCursor}
 import io.circe.jawn.decode

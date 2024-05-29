@@ -2,7 +2,7 @@ package terraform
 
 import io.circe.Decoder
 import io.circe.generic.semiauto.deriveDecoder
-import terraform.kubenetes_clusters.{VMConfig, YandexCluster}
+import terraform.kubenetes.clusters.{VMConfig, YandexCluster}
 import terraform.providers.yandex.Yandex
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 

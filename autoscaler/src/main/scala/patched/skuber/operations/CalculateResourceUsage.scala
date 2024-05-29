@@ -5,8 +5,8 @@ import patched.skuber.custom.KuberInfo
 import play.api.libs.json.Format
 import skuber.api.client.KubernetesClient
 import skuber.{EventList, NamespaceList, Node, NodeList, PodList}
-import terraform.kubenetes_clusters.Cluster
 import skuber.json.format.*
+import terraform.kubenetes.clusters.Cluster
 
 implicit val nodeListFormat: Format[NodeList] = ListResourceFormat[Node]
 import patched.skuber.operations.Conversions.toIO

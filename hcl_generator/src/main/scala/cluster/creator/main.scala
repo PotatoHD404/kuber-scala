@@ -1,5 +1,7 @@
+package cluster.creator
+
 import terraform.{DotenvLoader, S3Backend, createCluster, envOrError, envOrNone}
-import terraform.kubenetes_clusters.{Cluster, VMConfig, YandexCluster}
+import terraform.kubenetes.clusters.{Cluster, VMConfig, YandexCluster}
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
 
 import java.io.PrintWriter

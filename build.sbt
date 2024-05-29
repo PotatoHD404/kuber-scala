@@ -24,7 +24,7 @@ lazy val hclGenerator = (project in file("hcl_generator"))
       "com.github.javafaker" % "javafaker" % "1.0.2" % Test,
       "org.scalatest" %% "scalatest" % "3.2.18" % Test
     ),
-    assembly / mainClass := Some("cluster_creator.main"),
+    assembly / mainClass := Some("cluster.creator.main"),
     assembly / assemblyJarName := "cluster-creator.jar",
     assembly / assemblyMergeStrategy := {
       case PathList("META-INF", xs @ _*) => MergeStrategy.discard

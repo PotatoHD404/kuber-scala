@@ -1,12 +1,13 @@
 import com.github.javafaker.Faker
 import org.scalatest.funsuite.AnyFunSuite
-import terraform.kubenetes_clusters.{VMConfig, YandexCluster}
+import terraform.kubenetes.clusters.{VMConfig, YandexCluster}
 import terraform.{BackendResource, InfrastructureResource, ProviderSettings}
 import terraform.providers.yandex.Yandex
 
 import scala.reflect.ClassTag
 import scala.util.{Failure, Random, Success, Try}
 import sys.process.stringToProcess
+import org.scalactic.Prettifier.default
 
 class YandexClusterTest extends AnyFunSuite {
 
@@ -43,7 +44,7 @@ class YandexClusterTest extends AnyFunSuite {
     val provider = createRandomInstance[T1]
     val backend = if (Random.nextBoolean()) Some(createRandomInstance[T2]) else None
     val vmConfigs = List.fill(Random.nextInt(5) + 1)(createRandomInstance[VMConfig])
-    YandexCluster(provider, backend, vmConfigs)
+    YandexCluster(provider, backend, "", vmConfigs)
   }
 
   test("Generate and apply Terraform configuration") {
