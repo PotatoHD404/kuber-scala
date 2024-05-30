@@ -34,7 +34,7 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
     kuberInfo = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
 
     nodeResourceUsage = calculateNodeResourceUsage(kuberInfo)
-    nodeCount = nodes.items.length
+    nodeCount = cluster.getInstancesCount
 
     totalCpuCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("cpu")).sum.doubleValue
     totalMemoryCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("memory")).sum.doubleValue
@@ -61,7 +61,7 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
         println("No scaling action required")
       }
 
-    } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5) {
+    } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5 && nodeCount > 1) {
       val cpuExcess = math.floor(totalCpuCapacity - (totalCpuUsage / 0.5)).toInt
       val memoryExcess = math.floor(totalMemoryCapacity - (totalMemoryUsage / 0.5)).toInt
       val nodesExcess = math.min(cpuExcess / 2, memoryExcess / 4)

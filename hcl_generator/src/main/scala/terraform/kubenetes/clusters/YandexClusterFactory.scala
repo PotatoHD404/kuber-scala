@@ -182,6 +182,8 @@ trait Cluster {
   def downscale(n: Int): Unit
 
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
+
+  def getInstancesCount: Int
 }
 
 case class Instance(name: String, externalIp: String, internalIp: String)
@@ -234,6 +236,10 @@ case class YandexCluster[
       case _ => vmConfigs
     }
     vmConfigs = updatedConfigs
+  }
+
+  override def getInstancesCount: Int = {
+    instances.length
   }
 
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit = {
