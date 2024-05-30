@@ -2,6 +2,7 @@ package autoscaler
 
 import akka.actor.ActorSystem
 import cats.effect.{ExitCode, IO}
+import cats.effect.unsafe.implicits.global
 import cats.syntax.all.*
 import patched.skuber.operations.{checkResourceUsageAndScale, cordonNode, drainNodes}
 import terraform.providers.yandex.yandexprovidersettings.YandexProviderSettings
@@ -30,28 +31,10 @@ def main(): Unit = {
   println("Starting autoscaling process")
 
   try {
-    val nodeNames = List("multinode-demo-m02")
-    val gracePeriod = 30 // Adjust the grace period as needed
-
     val checkInterval = 15.seconds
     val checkResourceUsageAndScaleIO = checkResourceUsageAndScale()
-    val scheduledCheck = IO.sleep(checkInterval) *> checkResourceUsageAndScaleIO.foreverM
-
-    //    for {
-    //      nodes <- k8s.list[NodeList]().toIO
-    //      namespaces <- k8s.list[NamespaceList]().toIO
-    //      pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
-    //      events <- k8s.list[EventList]().toIO
-    //      info = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
-    //
-    //      // Cordon the node
-    //      _ <- nodeNames.traverse(cordonNode)
-    //
-    //      // Drain the node
-    //      _ <- drainNodes(nodeNames, gracePeriod)
-    //
-    //      // Other logic...
-    //    } yield ExitCode.Success
+    val scheduledCheck = IO.sleep(checkInterval) *> checkResourceUsageAndScaleIO
+    scheduledCheck.foreverM.unsafeRunSync()
   }
   catch {
     case e: Exception => throw e

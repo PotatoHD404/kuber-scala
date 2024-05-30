@@ -23,6 +23,7 @@ case class VMConfig(
                      cores: Int,
                      memory: Int,
                      diskSize: Int,
+                     uuid: String = java.util.UUID.randomUUID().toString
                    )
 
 def intToBase16(value: Int): String = {
@@ -91,7 +92,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
         } else {
           s"slave-${configIndex + 1}-$instanceIndex"
         }
-        val diskName = s"disk-${intToBase16(config.hashCode())}-${configIndex + 1}-$instanceIndex"
+        val diskName = s"disk-${configIndex + 1}-$instanceIndex"
         val disk = YandexComputeDisk(resourceName = diskName, size = Some(config.diskSize), `type` = Some("network-ssd"), zone = Some("ru-central1-a"), imageId = Some(image.id), name = Some(instanceName), description = Some(s"Диск для $instanceName"))
         val bootDisk = BootDisk(diskId = disk.id)
 

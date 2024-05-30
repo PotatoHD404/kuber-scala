@@ -34,6 +34,7 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
     kuberInfo = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
 
     nodeResourceUsage = calculateNodeResourceUsage(kuberInfo)
+    nodeCount = nodes.items.length
 
     totalCpuCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("cpu")).sum.doubleValue
     totalMemoryCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("memory")).sum.doubleValue
@@ -44,20 +45,37 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
     cpuUtilization = totalCpuUsage / totalCpuCapacity
     memoryUtilization = totalMemoryUsage / totalMemoryCapacity
 
+    _ = println(s"CPU Utilization: ${cpuUtilization * 100}%")
+    _ = println(s"Memory Utilization: ${memoryUtilization * 100}%")
+
     _ = if (cpuUtilization > 0.9 || memoryUtilization > 0.9) {
       val cpuNeeded = math.ceil((totalCpuUsage / 0.9) - totalCpuCapacity).toInt
       val memoryNeeded = math.ceil((totalMemoryUsage / 0.9) - totalMemoryCapacity).toInt
       val nodesNeeded = math.max(cpuNeeded / 2, memoryNeeded / 4)
-      require(nodesNeeded < 5, "Safety check failed, nodes >= 5")
-      cluster.upscale(nodesNeeded)
-      cluster.applyTerraformConfig()
+      require(nodesNeeded + nodeCount < 5, "Safety check failed, nodes >= 5")
+      if (nodesNeeded > 0) {
+        println(s"Upscaling by $nodesNeeded nodes")
+        cluster.upscale(nodesNeeded)
+        cluster.applyTerraformConfig()
+      } else {
+        println("No scaling action required")
+      }
+
     } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5) {
       val cpuExcess = math.floor(totalCpuCapacity - (totalCpuUsage / 0.5)).toInt
       val memoryExcess = math.floor(totalMemoryCapacity - (totalMemoryUsage / 0.5)).toInt
       val nodesExcess = math.min(cpuExcess / 2, memoryExcess / 4)
-      require(nodesExcess < 5, "Safety check failed, nodes >= 5")
-      cluster.downscale(nodesExcess)
-      cluster.applyTerraformConfig()
+      val nodesToRemove = if (nodesExcess >= nodeCount) nodeCount - 1 else nodesExcess
+      if (nodesToRemove > 0) {
+        println(s"Downscaling by $nodesToRemove nodes")
+        cluster.downscale(nodesToRemove)
+        cluster.applyTerraformConfig()
+      } else {
+        println("No scaling action required")
+      }
+
+    } else {
+      println("No scaling action required")
     }
   } yield ()
 }
