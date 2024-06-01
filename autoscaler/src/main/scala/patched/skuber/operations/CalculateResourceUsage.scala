@@ -45,7 +45,9 @@ def getNodeNameByIp(ip: String)(implicit k8s: KubernetesClient): Option[String] 
 
 def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluster): IO[Unit] = {
   for {
-    nodes <- k8s.list[NodeList]().toIO
+    defaultNodes <- k8s.list[NodeList]().toIO
+    systemNodes <- k8s.list[NodeList](Some("kube-system")).toIO
+    nodes = defaultNodes ++ systemNodes
     _ = cluster.readTerraformState()
     namespaces <- k8s.list[NamespaceList]().toIO
     pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
@@ -54,8 +56,8 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
     nodeCount = cluster.getInstancesCount
     nodeResourceUsage = calculateNodeResourceUsage(kuberInfo)
 
-    totalCpuCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("cpu")).sum.doubleValue
-    totalMemoryCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("memory")).sum.doubleValue
+    totalCpuCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("cpu")).sum.doubleValue.round
+    totalMemoryCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("memory")).sum.doubleValue.round
 
     totalCpuUsage = nodeResourceUsage.map(_.cpuUsage).sum
     totalMemoryUsage = nodeResourceUsage.map(_.memoryUsage).sum
@@ -66,31 +68,18 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
     _ = println(s"CPU Utilization: ${cpuUtilization * 100}%")
     _ = println(s"Memory Utilization: ${memoryUtilization * 100}%")
 
-    _ = if (cpuUtilization > 0.9 || memoryUtilization > 0.9) {
-      val cpuNeeded = math.ceil((totalCpuUsage / 0.9) - totalCpuCapacity).toInt
-      val memoryNeeded = math.ceil((totalMemoryUsage / 0.9) - totalMemoryCapacity).toInt
-      val nodesNeeded = math.max(cpuNeeded / 2, memoryNeeded / 4)
-      require(nodesNeeded + nodeCount < 5, "Safety check failed, nodes >= 5")
-      if (nodesNeeded > 0) {
-        println(s"Upscaling by $nodesNeeded nodes")
-        cluster.upscale(nodesNeeded)
+    _ = if (cpuUtilization >= 0.5 || memoryUtilization >= 0.5) {
+      require(1 + nodeCount < 5, "Safety check failed, nodes >= 5")
+      if (1 > 0) {
+        println(s"Upscaling by 1 node")
+        cluster.upscale(1)
       } else {
         println("No scaling action required")
       }
-
-    } else if (cpuUtilization < 0.5 && memoryUtilization < 0.5 && nodeCount > 1) {
-      val cpuExcess = math.floor(totalCpuCapacity - (totalCpuUsage / 0.5)).toInt
-      val memoryExcess = math.floor(totalMemoryCapacity - (totalMemoryUsage / 0.5)).toInt
-      val nodesExcess = math.min(cpuExcess / 2, memoryExcess / 4)
-      val nodesToRemove = if (nodesExcess >= nodeCount) nodeCount - 1 else nodesExcess
-      if (nodesToRemove > 0) {
-        println(s"Downscaling by $nodesToRemove nodes")
-        val removedInstances = cluster.downscale(nodesToRemove)
+    } else if (cpuUtilization < 0.1 && memoryUtilization < 0.1 && nodeCount > 1) {
+        println(s"Downscaling by 1 node")
+        val removedInstances = cluster.downscale(1)
         deleteRemovedInstances(removedInstances)
-      } else {
-        println("No scaling action required")
-      }
-
     } else {
       println("No scaling action required")
     }
