@@ -67,44 +67,44 @@ def main():
 
     # Check the number of hosts (should be 1)
     logging.info("Checking initial node count")
-    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
+    assert wait_for_node_count(1, timeout=300), "Expected 1 host in the cluster"
 
     # Create the first pod
     create_pod("test-pod-1", "1", "500Mi")
 
     # Wait for the first pod to start (giving 2 minutes)
     logging.info("Waiting for the first pod to start")
-    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "First pod not started"
+    assert wait_for_pod_status("test-pod-1", "Running", timeout=300), "First pod not started"
 
     # Check the number of hosts (should be 1)
     logging.info("Checking node count after creating the first pod")
-    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
+    assert wait_for_node_count(1, timeout=300), "Expected 1 host in the cluster"
 
     # Create the second pod
     create_pod("test-pod-2", "1", "500Mi")
 
     # Wait for the second pod to start (giving 2 minutes)
     logging.info("Waiting for the second pod to start")
-    assert wait_for_pod_status("test-pod-2", "Running", timeout=120), "Second pod not started"
+    assert wait_for_pod_status("test-pod-2", "Running", timeout=300), "Second pod not started"
 
     # Check the number of hosts (should be 2)
     logging.info("Checking node count after creating the second pod")
-    assert wait_for_node_count(2, timeout=120), "Expected 2 hosts in the cluster"
+    assert wait_for_node_count(2, timeout=300), "Expected 2 hosts in the cluster"
 
     # Delete the second pod
     delete_pod("test-pod-2")
 
     # Wait for the second pod to be deleted (giving 2 minutes)
     logging.info("Waiting for the second pod to be deleted")
-    assert wait_for_pod_status("test-pod-2", "Succeeded", timeout=120), "Second pod not deleted"
+    assert wait_for_pod_status("test-pod-2", "Succeeded", timeout=300), "Second pod not deleted"
 
     # Check that the first pod is still running
     logging.info("Checking the status of the first pod")
-    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "First pod not running"
+    assert wait_for_pod_status("test-pod-1", "Running", timeout=300), "First pod not running"
 
     # Check the number of hosts (should be 1)
     logging.info("Checking node count after deleting the second pod")
-    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
+    assert wait_for_node_count(1, timeout=300), "Expected 1 host in the cluster"
 
     logging.info("Test passed successfully!")
 

@@ -31,7 +31,7 @@ def main(): Unit = {
   println("Starting autoscaling process")
 
   try {
-    val checkInterval = 15.seconds
+    val checkInterval = 30.seconds
     val checkResourceUsageAndScaleIO = checkResourceUsageAndScale()
     val scheduledCheck = IO.sleep(checkInterval) *> checkResourceUsageAndScaleIO
     scheduledCheck.foreverM.unsafeRunSync()
