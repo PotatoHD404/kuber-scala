@@ -1,9 +1,14 @@
 import time
+import logging
 from kubernetes import client, config
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
 def get_node_count():
     v1 = client.CoreV1Api()
     nodes = v1.list_node()
+    logging.info(f"Current node count: {len(nodes.items)}")
     return len(nodes.items)
 
 def create_pod(name, cpu, memory):
@@ -24,69 +29,84 @@ def create_pod(name, cpu, memory):
         ),
     )
     v1.create_namespaced_pod(namespace="default", body=pod)
+    logging.info(f"Created pod: {name}")
 
 def get_pod_status(name):
     v1 = client.CoreV1Api()
     pod = v1.read_namespaced_pod(name=name, namespace="default")
+    logging.info(f"Pod {name} status: {pod.status.phase}")
     return pod.status.phase
 
 def delete_pod(name):
     v1 = client.CoreV1Api()
     v1.delete_namespaced_pod(name=name, namespace="default")
+    logging.info(f"Deleted pod: {name}")
 
 def wait_for_node_count(expected_count, timeout):
     start_time = time.time()
     while time.time() - start_time < timeout:
         if get_node_count() == expected_count:
+            logging.info(f"Expected node count of {expected_count} reached")
             return True
-        time.sleep(10)  # Проверяем каждые 10 секунд
+        time.sleep(10)  # Check every 10 seconds
+    logging.warning(f"Timeout reached while waiting for node count of {expected_count}")
     return False
 
 def wait_for_pod_status(name, expected_status, timeout):
     start_time = time.time()
     while time.time() - start_time < timeout:
         if get_pod_status(name) == expected_status:
+            logging.info(f"Pod {name} reached expected status: {expected_status}")
             return True
-        time.sleep(10)  # Проверяем каждые 10 секунд
+        time.sleep(10)  # Check every 10 seconds
+    logging.warning(f"Timeout reached while waiting for pod {name} to reach status {expected_status}")
     return False
 
 def main():
     config.load_kube_config()
 
-    # Проверяем количество хостов (должно быть 1)
-    assert wait_for_node_count(1, timeout=120), "Ожидался 1 хост в кластере"
+    # Check the number of hosts (should be 1)
+    logging.info("Checking initial node count")
+    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
 
-    # Создаем первую поду
+    # Create the first pod
     create_pod("test-pod-1", "1", "500Mi")
 
-    # Ждем, пока первая пода запустится (даем 2 минуты)
-    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "Первая пода не запущена"
+    # Wait for the first pod to start (giving 2 minutes)
+    logging.info("Waiting for the first pod to start")
+    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "First pod not started"
 
-    # Проверяем количество хостов (должно быть 1)
-    assert wait_for_node_count(1, timeout=120), "Ожидался 1 хост в кластере"
+    # Check the number of hosts (should be 1)
+    logging.info("Checking node count after creating the first pod")
+    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
 
-    # Создаем вторую поду
+    # Create the second pod
     create_pod("test-pod-2", "1", "500Mi")
 
-    # Ждем, пока вторая пода запустится (даем 2 минуты)
-    assert wait_for_pod_status("test-pod-2", "Running", timeout=120), "Вторая пода не запущена"
+    # Wait for the second pod to start (giving 2 minutes)
+    logging.info("Waiting for the second pod to start")
+    assert wait_for_pod_status("test-pod-2", "Running", timeout=120), "Second pod not started"
 
-    # Проверяем количество хостов (должно быть 2)
-    assert wait_for_node_count(2, timeout=120), "Ожидалось 2 хоста в кластере"
+    # Check the number of hosts (should be 2)
+    logging.info("Checking node count after creating the second pod")
+    assert wait_for_node_count(2, timeout=120), "Expected 2 hosts in the cluster"
 
-    # Удаляем вторую поду
+    # Delete the second pod
     delete_pod("test-pod-2")
 
-    # Ждем, пока вторая пода удалится (даем 2 минуты)
-    assert wait_for_pod_status("test-pod-2", "Succeeded", timeout=120), "Вторая пода не удалена"
+    # Wait for the second pod to be deleted (giving 2 minutes)
+    logging.info("Waiting for the second pod to be deleted")
+    assert wait_for_pod_status("test-pod-2", "Succeeded", timeout=120), "Second pod not deleted"
 
-    # Проверяем, что первая пода все еще запущена
-    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "Первая пода не запущена"
+    # Check that the first pod is still running
+    logging.info("Checking the status of the first pod")
+    assert wait_for_pod_status("test-pod-1", "Running", timeout=120), "First pod not running"
 
-    # Проверяем количество хостов (должно быть 1)
-    assert wait_for_node_count(1, timeout=120), "Ожидался 1 хост в кластере"
+    # Check the number of hosts (should be 1)
+    logging.info("Checking node count after deleting the second pod")
+    assert wait_for_node_count(1, timeout=120), "Expected 1 host in the cluster"
 
-    print("Тест пройден успешно!")
+    logging.info("Test passed successfully!")
 
 if __name__ == "__main__":
     main()

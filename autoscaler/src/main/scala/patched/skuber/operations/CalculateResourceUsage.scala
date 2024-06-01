@@ -6,7 +6,8 @@ import play.api.libs.json.Format
 import skuber.api.client.KubernetesClient
 import skuber.{EventList, NamespaceList, Node, NodeList, PodList}
 import skuber.json.format.*
-import terraform.kubenetes.clusters.Cluster
+import terraform.kubenetes.clusters.{Cluster, Instance}
+import cats.effect.unsafe.implicits.global
 
 implicit val nodeListFormat: Format[NodeList] = ListResourceFormat[Node]
 import patched.skuber.operations.Conversions.toIO
@@ -25,16 +26,33 @@ def calculateNodeResourceUsage(kuberInfo: KuberInfo): List[NodeResourceUsage] = 
   }.toList
 }
 
+def deleteRemovedInstances(removedInstances: List[Instance])(implicit k8s: KubernetesClient): Unit = {
+  removedInstances.foreach { instance =>
+    val nodeNameOption = getNodeNameByIp(instance.internalIp)
+    nodeNameOption.foreach { nodeName =>
+      k8s.delete[Node](nodeName).toIO.attempt.unsafeRunSync() match {
+        case Right(_) => println(s"Node $nodeName deleted successfully")
+        case Left(ex) => println(s"Error deleting node $nodeName: ${ex.getMessage}")
+      }
+    }
+  }
+}
+
+def getNodeNameByIp(ip: String)(implicit k8s: KubernetesClient): Option[String] = {
+  val nodes = k8s.list[NodeList]().toIO.unsafeRunSync().items
+  nodes.find(node => node.status.exists(_.addresses.exists(_.address == ip))).map(_.name)
+}
+
 def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluster): IO[Unit] = {
   for {
     nodes <- k8s.list[NodeList]().toIO
+    _ = cluster.readTerraformState()
     namespaces <- k8s.list[NamespaceList]().toIO
     pods <- namespaces.items.traverse(ns => k8s.list[PodList](Some(ns.name)).toIO).map(_.flatten)
     events <- k8s.list[EventList]().toIO
     kuberInfo = KuberInfo.fromNodesAndPods(nodes, pods, events, namespaces)
-
-    nodeResourceUsage = calculateNodeResourceUsage(kuberInfo)
     nodeCount = cluster.getInstancesCount
+    nodeResourceUsage = calculateNodeResourceUsage(kuberInfo)
 
     totalCpuCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("cpu")).sum.doubleValue
     totalMemoryCapacity = kuberInfo.nodes.values.flatMap(_.capacity.get("memory")).sum.doubleValue
@@ -56,7 +74,6 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
       if (nodesNeeded > 0) {
         println(s"Upscaling by $nodesNeeded nodes")
         cluster.upscale(nodesNeeded)
-        cluster.applyTerraformConfig()
       } else {
         println("No scaling action required")
       }
@@ -68,8 +85,8 @@ def checkResourceUsageAndScale()(implicit k8s: KubernetesClient, cluster: Cluste
       val nodesToRemove = if (nodesExcess >= nodeCount) nodeCount - 1 else nodesExcess
       if (nodesToRemove > 0) {
         println(s"Downscaling by $nodesToRemove nodes")
-        cluster.downscale(nodesToRemove)
-        cluster.applyTerraformConfig()
+        val removedInstances = cluster.downscale(nodesToRemove)
+        deleteRemovedInstances(removedInstances)
       } else {
         println("No scaling action required")
       }

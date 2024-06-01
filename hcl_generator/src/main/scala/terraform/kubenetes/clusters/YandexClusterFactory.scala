@@ -2,6 +2,7 @@ package terraform.kubenetes.clusters
 
 import io.circe.{Decoder, HCursor}
 import io.circe.jawn.decode
+import io.circe.yaml.parser
 import terraform.providers.yandex.datasources.yandex_compute_image.YandexComputeImage
 import terraform.providers.yandex.resources.yandex_compute_disk.YandexComputeDisk
 import terraform.providers.yandex.resources.yandex_compute_instance.{BootDisk, NetworkInterface, Resources, YandexComputeInstance}
@@ -37,7 +38,6 @@ case class CloudConfig(
                       ) {
   def toHCL: UnquotedString = {
     val sb = new StringBuilder
-    sb.append("<<-EOT\n")
     sb.append("#cloud-config\n\n")
     sb.append(s"ssh_pwauth: ${if (sshPwauth) "yes" else "no"}\n\n")
     sb.append("users:\n")
@@ -59,8 +59,13 @@ case class CloudConfig(
         sb.append(s"  - $cmd\n")
       }
     }
-    sb.append("EOT")
-    UnquotedString(sb.toString())
+
+    val yamlString = sb.toString()
+    UnquotedString(s"<<-EOT\n$yamlString\nEOT")
+//    parser.parse(yamlString) match {
+//      case Right(_) => UnquotedString(s"<<-EOT\n$yamlString\nEOT")
+//      case Left(error) => throw new IllegalArgumentException(s"Invalid cloud-init YAML: $error")
+//    }
   }
 }
 
@@ -131,6 +136,7 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
               s"""echo "${envFileContents.replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/.env""",
               s"""echo "${sshKey.replace("\n", "\\n").replace("$", "$$").replace("\"", """\"""")}" | sudo tee /home/ubuntu/id_rsa.pub""",
               s"curl -sfL https://get.k3s.io | sh -s - server --token $k3sToken --node-external-ip $${yandex_vpc_address.address-$instanceName.external_ipv4_address[0].address}",
+              """'sudo sh -c ''echo "mirrors:\\n  docker.io:\\n    endpoint:\\n      - https://mirror.gcr.io" | sudo tee /etc/rancher/k3s/registries.yaml'''""",
               "sudo chown ubuntu:ubuntu /etc/rancher/k3s/k3s.yaml",
               "sudo chmod -R u+r /etc/rancher/k3s/k3s.yaml",
               "echo 'export KUBECONFIG=/etc/rancher/k3s/k3s.yaml' >> /home/ubuntu/.bashrc",
@@ -154,7 +160,8 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
               )
             ),
             runcmd = Some(List(
-              s"curl -sfL https://get.k3s.io | sh -s - agent --server https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 --token $k3sToken --node-external-ip $${yandex_vpc_address.address-$instanceName.external_ipv4_address[0].address}"
+              s"curl -sfL https://get.k3s.io | sh -s - agent --server https://$${yandex_compute_instance.$masterInstanceName.network_interface.0.nat_ip_address}:6443 --token $k3sToken --node-external-ip $${yandex_vpc_address.address-$instanceName.external_ipv4_address[0].address}",
+              """'sudo sh -c ''echo "mirrors:\\n  docker.io:\\n    endpoint:\\n      - https://mirror.gcr.io" | sudo tee /etc/rancher/k3s/registries.yaml'''""",
             ))
           )
         }
@@ -176,17 +183,21 @@ case class YandexVMFactory(image: YandexComputeImage, subnet: YandexVpcSubnet, s
   }
 }
 
-trait Cluster {
-  def upscale(n: Int): Unit
+case class Instance(name: String, externalIp: String, internalIp: String)
 
-  def downscale(n: Int): Unit
+trait Cluster {
+  def upscale(n: Int): List[Instance]
+
+  def downscale(n: Int): List[Instance]
+
+  def readTerraformState(): Unit
 
   def applyTerraformConfig(terraformFilePath: String = "cluster.tf"): Unit
 
   def getInstancesCount: Int
-}
 
-case class Instance(name: String, externalIp: String, internalIp: String)
+  def getInstances: List[Instance]
+}
 
 case class YandexCluster[
   T1 <: ProviderSettings[Yandex],
@@ -194,6 +205,8 @@ case class YandexCluster[
 ](provider: T1, backend: Option[T2] = None, k3sToken: String, var vmConfigs: List[VMConfig]) extends Cluster {
 
   var instances: List[Instance] = List.empty
+
+  override def getInstances: List[Instance] = instances
 
   def create: YandexProviderConfig[T1, T2, InfrastructureResource[Yandex]] = {
     val image = YandexComputeImage("family-images-linux", family = Some("ubuntu-2004-lts"))
@@ -220,23 +233,40 @@ case class YandexCluster[
     YandexProviderConfig(provider, backend, resources)
   }
 
-  override def upscale(n: Int): Unit = {
+  override def upscale(n: Int): List[Instance] = {
     require(n > 0, "Number of instances to add must be positive")
+    val previousInstances = instances
     val updatedConfigs = vmConfigs match {
       case head :: tail => head.copy(count = head.count + n) :: tail
       case _ => vmConfigs
     }
     vmConfigs = updatedConfigs
+    applyTerraformConfig()
+    getAddedInstances(previousInstances)
   }
 
-  override def downscale(n: Int): Unit = {
+  override def downscale(n: Int): List[Instance] = {
     require(n > 0, "Number of instances to remove must be positive")
+    val previousInstances = instances
     val updatedConfigs = vmConfigs match {
       case head :: tail => head.copy(count = Math.max(head.count - n, 0)) :: tail
       case _ => vmConfigs
     }
     vmConfigs = updatedConfigs
+    applyTerraformConfig()
+    updateInstances(previousInstances)
   }
+
+  def getAddedInstances(previousInstances: List[Instance]): List[Instance] = {
+    readTerraformState()
+    instances.diff(previousInstances)
+  }
+
+  def updateInstances(previousInstances: List[Instance]): List[Instance] = {
+    readTerraformState()
+    previousInstances.diff(instances)
+  }
+
 
   override def getInstancesCount: Int = {
     instances.length
@@ -292,7 +322,7 @@ case class YandexCluster[
 
   implicit val mapDecoder: Decoder[Map[String, Any]] = Decoder.decodeMap[String, Any]
 
-  def readTerraformState(): Unit = {
+  override def readTerraformState(): Unit = {
     val tfstateJson = "terraform state pull".!!
 
     val result = decode[State](tfstateJson)
@@ -312,7 +342,7 @@ case class YandexCluster[
     }
   }
 
-  def printInstances(): Unit = {
+  private def printInstances(): Unit = {
     println("Созданные экземпляры:")
     instances.foreach { instance =>
       println(s"Имя: ${instance.name}")
